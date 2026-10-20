@@ -6,16 +6,16 @@
 <title>Winch Marketing</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <script>
 tailwind.config = {
   theme: {
     extend: {
-      colors: { ink: '#0A0A0A', char: '#121212', line: '#27272A', hi: '#F5C230', mute: '#A1A1AA' },
+      colors: { ink: '#0A0A0A', paper: '#F4F4F2', hi: '#F5C230', dim: '#7C7C82', dimlt: '#A9A9AE', mute: '#A1A1AA' },
       fontFamily: {
-        hd: ['Anton', 'Impact', 'Arial Narrow', 'sans-serif'],
-        body: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        hd: ['Atkinson Hyperlegible', 'system-ui', 'sans-serif'],
+        body: ['Atkinson Hyperlegible', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'Consolas', 'monospace']
       }
     }
@@ -25,23 +25,24 @@ tailwind.config = {
 <style>
 :root{color-scheme:dark}
 html{scroll-behavior:smooth}
-body{background:#0A0A0A;color:#FFFFFF;font-family:'Space Grotesk',system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
-h1,h2,h3,p{margin:0}
-.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.dots{background-image:radial-gradient(#2E2E32 1px,transparent 1px);background-size:22px 22px}
-.noscroll{scrollbar-width:none;-ms-overflow-style:none}
-.noscroll::-webkit-scrollbar{display:none}
-.plate{position:relative}
-.plate::before,.plate::after{content:"";position:absolute;width:16px;height:16px;border:2px solid #F5C230;pointer-events:none}
-.plate::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
-.plate::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
-.glow{transition:box-shadow .2s ease,transform .15s ease,background .15s ease,border-color .2s ease,color .2s ease}
-.glow:hover{box-shadow:0 0 0 1px #F5C230,0 0 26px rgba(245,194,48,.4)}
+body{background:#0A0A0A;color:#FFFFFF;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p,ul,ol{margin:0}
+.gutter{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+section[id]{scroll-margin-top:76px}
+.rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.rv.in{opacity:1;transform:none}
+.btn{transition:background-color .15s ease,color .15s ease,transform .15s ease}
+.btn:hover{transform:translateY(-2px)}
+.mq{display:flex;width:max-content;animation:mq 30s linear infinite}
+.mq:hover{animation-play-state:paused}
+@keyframes mq{to{transform:translateX(-50%)}}
 a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3px}
-section[id]{scroll-margin-top:72px}
-@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.25}}
-@media (prefers-reduced-motion:no-preference){.pulse{animation:pulseDot 1.6s ease-in-out infinite}}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.glow{transition:none}}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rv{opacity:1;transform:none;transition:none}
+  .mq{animation:none}
+  .btn:hover{transform:none}
+}
 </style>
 
 </head>
@@ -108,14 +109,54 @@ function useTracking() {
   }, []);
 }
 
-/* ---------- small pieces ---------- */
+/* ---------- helpers ---------- */
 
-function Logo() {
-  return <img src={LOGO} alt="Winch Marketing" width="140" height="68" style={{ width: 140, height: 'auto', display: 'block' }} />;
+const reduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+
+function useInView(threshold) {
+  const ref = useRef(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (!('IntersectionObserver' in window) || reduced()) { setOn(true); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) { setOn(true); io.disconnect(); }
+    }, { threshold: threshold || 0.15 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return [ref, on];
 }
 
-function Tag({ children, className = '' }) {
-  return <p className={'font-mono text-xs uppercase tracking-[0.12em] text-hi ' + className}>{children}</p>;
+function Reveal({ children, className = '', delay = 0 }) {
+  const [ref, on] = useInView(0.12);
+  return <div ref={ref} className={'rv ' + (on ? 'in ' : '') + className} style={{ transitionDelay: delay + 'ms' }}>{children}</div>;
+}
+
+function CountUp({ to, suffix = '', prefix = '' }) {
+  const [ref, on] = useInView(0.4);
+  const [n, setN] = useState(reduced() ? to : 0);
+  useEffect(() => {
+    if (!on || reduced()) { if (on) setN(to); return; }
+    let raf; const t0 = performance.now(); const dur = 1400;
+    const tick = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [on]);
+  return <span ref={ref}>{prefix}{n}{suffix}</span>;
+}
+
+function Logo({ w = 130 }) {
+  return <img src={LOGO} alt="Winch Marketing" width={w} height={Math.round(w * 0.484)} style={{ width: w, height: 'auto', display: 'block' }} />;
+}
+
+function Label({ children, dark = false }) {
+  return <p className={'font-mono text-[12px] uppercase tracking-[0.14em] ' + (dark ? 'text-black/60' : 'text-hi')}>{'{' + children + '}'}</p>;
 }
 
 function PhoneIcon() {
@@ -130,15 +171,15 @@ function PhoneIcon() {
 
 function Header() {
   return (
-    <header className="sticky z-40 border-b border-line bg-ink" style={{ top: 'env(safe-area-inset-top, 0px)' }}>
-      <div className="gutter mx-auto flex max-w-[1280px] items-center justify-between py-1.5 md:border-x md:border-line">
-        <a href="#top" aria-label="Winch Marketing, home"><Logo /></a>
-        <nav aria-label="Main" className="hidden items-center gap-7 font-mono text-xs uppercase tracking-[0.12em] md:flex">
+    <header className="sticky z-40 border-b border-white/10 bg-ink" style={{ top: 0 }}>
+      <div className="gutter mx-auto flex max-w-[1280px] items-center justify-between py-2">
+        <a href="#top" aria-label="Winch Marketing, home"><Logo w={120} /></a>
+        <nav aria-label="Main" className="hidden items-center gap-8 font-mono text-[12px] uppercase tracking-[0.14em] md:flex">
           <a className="text-mute hover:text-hi" href="#proof">Proof</a>
+          <a className="text-mute hover:text-hi" href="#about">About</a>
           <a className="text-mute hover:text-hi" href="#what">What you get</a>
           <a className="text-mute hover:text-hi" href="#how">How it runs</a>
-          <a className="text-mute hover:text-hi" href="#about">About</a>
-          <a className="glow rounded-sm bg-hi px-5 py-3 font-bold text-black" href="#contact">Book a call</a>
+          <a className="btn rounded-[4px] bg-hi px-5 py-3 font-bold text-black hover:bg-white" href="#contact">Book a call</a>
         </nav>
       </div>
     </header>
@@ -147,218 +188,154 @@ function Header() {
 
 /* ---------- hero ---------- */
 
-const LEADS = [
-  { src: 'Google search', status: 'Booked Thu 10:00', tone: 'hi', rep: 'Tom' },
-  { src: 'Facebook ad', status: 'Quote sent', tone: 'line', rep: 'Sam' },
-  { src: 'Word of mouth', status: 'Won', tone: 'solid', rep: 'Tom' },
-  { src: 'Source unknown', status: 'No source logged', tone: 'warn', rep: '--' }
-];
+const TRADES = ['Windows', 'Doors', 'Kitchens', 'Blinds', 'Mobility', 'Solar'];
 
-function StatusBadge({ tone, children }) {
-  const cls = {
-    hi: 'border-hi text-hi',
-    line: 'border-mute text-white',
-    solid: 'border-hi bg-hi text-black',
-    warn: 'border-dashed border-hi text-hi'
-  }[tone];
-  return <span className={'inline-block border px-2 py-1 font-mono text-[11px] font-medium uppercase leading-tight tracking-wide ' + cls}>{children}</span>;
-}
-
-function LeadTracker() {
+function HeroImage() {
+  const [failed, setFailed] = useState(false);
+  const [shown, setShown] = useState(false);
+  if (failed) return null;
   return (
-    <div className="plate border border-line bg-ink p-4 md:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3 font-mono text-[11px] uppercase tracking-[0.14em]">
-        <span className="flex items-center gap-2 text-hi">
-          <span className="pulse inline-block h-2 w-2 bg-hi" aria-hidden="true"></span>
-          Live lead tracker
-        </span>
-        <span className="text-mute">Example</span>
+    <div className="absolute inset-0 flex justify-center">
+      <div className="relative h-full w-full lg:w-auto">
+        <img
+          src="hero.jpg"
+          alt="A yellow front door in a grey brick wall"
+          width="825"
+          height="973"
+          fetchpriority="high"
+          onError={() => setFailed(true)}
+          onLoad={() => setShown(true)}
+          className="h-full w-full object-cover lg:w-auto lg:max-w-none"
+          style={{ opacity: shown ? 1 : 0, transform: shown ? 'scale(1)' : 'scale(1.05)', transition: reduced() ? 'none' : 'opacity .9s ease, transform 1.8s ease' }}
+        />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[22%] bg-gradient-to-b from-ink/80 to-transparent lg:h-[18%] lg:from-ink/95 lg:via-ink/60"></div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[64%] bg-gradient-to-t from-ink via-ink/85 to-transparent lg:h-[18%] lg:via-ink/70"></div>
+        <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[30%] bg-gradient-to-r from-ink to-transparent lg:block"></div>
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[30%] bg-gradient-to-l from-ink to-transparent lg:block"></div>
       </div>
-      <div className="grid grid-cols-[1.1fr_1.3fr_0.5fr] gap-x-3 border-b border-line pb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
-        <span>Source</span><span>Status</span><span className="text-right">Rep</span>
-      </div>
-      <ul className="m-0 list-none p-0">
-        {LEADS.map((l) => (
-          <li key={l.src} className="grid grid-cols-[1.1fr_1.3fr_0.5fr] items-center gap-x-3 border-b border-line py-3 last:border-b-0">
-            <span className="font-mono text-[13px] leading-tight">{l.src}</span>
-            <span><StatusBadge tone={l.tone}>{l.status}</StatusBadge></span>
-            <span className="text-right font-mono text-[13px] uppercase text-mute">{l.rep}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
 
 function Hero() {
+  const row = TRADES.concat(TRADES);
   return (
-    <section className="dots border-b border-line">
-      <div className="gutter mx-auto grid max-w-[1280px] gap-10 py-10 md:grid-cols-12 md:gap-12 md:border-x md:border-line md:py-20">
-        <div className="flex flex-col gap-6 md:col-span-7">
-          <h1 className="font-hd text-[clamp(46px,13vw,104px)] uppercase leading-[0.92] tracking-[0.01em]">
-            Marketing that <span className="text-hi">pulls the work in.</span>
-          </h1>
-          <p className="text-lg text-mute">For home-visit and rep-led trades.</p>
-          <div>
-            <a href="#contact" className="glow inline-block rounded-sm bg-hi px-7 py-4 text-center font-mono text-sm font-bold uppercase tracking-[0.1em] text-black">Book a 15-minute call</a>
-          </div>
-        </div>
-        <div className="md:col-span-5 md:border-l-[3px] md:border-hi md:pl-10">
-          <LeadTracker />
+    <section className="bg-ink">
+      <div className="relative isolate overflow-hidden">
+        <HeroImage />
+        <div className="gutter relative z-10 mx-auto flex min-h-[max(560px,calc(100svh-124px))] w-full max-w-[1400px] flex-col justify-end gap-5 pb-7 pt-9 lg:min-h-[max(560px,calc(100svh-122px))] lg:flex-row lg:items-end lg:justify-between lg:gap-0 lg:pb-14 lg:pt-10">
+          <Reveal>
+            <h1 className="font-hd text-[min(12.6vw,68px)] font-bold uppercase leading-[0.95] tracking-[-0.01em] lg:text-[min(5vw,104px)]">
+              Marketing<br />
+              that pulls<br />
+              <span className="text-hi">the work in.</span>
+            </h1>
+          </Reveal>
+          <Reveal delay={160} className="flex flex-col gap-5 lg:max-w-[240px]">
+            <p className="text-[19px] leading-snug text-white/85">For home-visit and rep-led trades.</p>
+            <a href="#contact" className="btn hidden rounded-[4px] bg-hi px-6 py-4 text-center font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black hover:bg-white lg:inline-block">Book a call</a>
+          </Reveal>
         </div>
       </div>
-    </section>
-  );
-}
-
-/* ---------- industry strip ---------- */
-
-const TRADES = ['Windows', 'Doors', 'Kitchens', 'Blinds', 'Mobility', 'Solar'];
-
-function TradeStrip() {
-  return (
-    <section aria-label="Trades I work with" className="border-b border-line">
-      <div className="gutter mx-auto flex max-w-[1280px] items-center gap-3 py-4 md:border-x md:border-line">
-        <span className="hidden shrink-0 font-mono text-xs uppercase tracking-[0.12em] text-hi sm:block">Built for</span>
-        <ul className="noscroll m-0 flex min-w-0 list-none snap-x gap-2 overflow-x-auto p-0 md:flex-wrap md:overflow-visible">
-          {TRADES.map((t) => (
-            <li key={t} className="shrink-0 snap-start border border-line px-4 py-2.5 font-mono text-xs uppercase tracking-[0.12em] text-mute">{t}</li>
+      <div className="overflow-hidden border-t border-white/10 py-4 [@media(prefers-reduced-motion:reduce)]:overflow-x-auto" aria-label="Trades I work with">
+        <div className="mq">
+          {row.map((t, i) => (
+            <span key={t + i} className="flex shrink-0 items-center gap-6 pr-6 font-mono text-[13px] uppercase tracking-[0.16em] text-mute">
+              {t}<span className="inline-block h-[6px] w-[6px] bg-hi" aria-hidden="true"></span>
+            </span>
           ))}
-        </ul>
+        </div>
       </div>
     </section>
   );
 }
 
-/* ---------- proof ---------- */
-
-const PROOF = [
-  { big: '280 > 500+', small: 'leads a week' },
-  { big: '+5%', small: 'ad spend' },
-  { big: '45% > 60%', small: 'of leads booked' }
-];
+/* ---------- proof (light band) ---------- */
 
 function Proof() {
   return (
-    <section id="proof" className="border-b border-line bg-char">
-      <div className="gutter mx-auto max-w-[1280px] py-10 md:border-x md:border-line md:py-16">
-        <div className="mb-6 flex flex-col gap-3 md:mb-8">
-          <Tag>[ Proof ]</Tag>
-          <h2 className="font-hd text-[clamp(34px,8.5vw,64px)] uppercase leading-[0.95]">Last 5 months.</h2>
-        </div>
-        <ul className="m-0 grid list-none gap-px border border-line bg-line p-0 md:grid-cols-3">
-          {PROOF.map((p) => (
-            <li key={p.small} className="flex flex-col gap-1 bg-ink p-6 md:p-8">
-              <span className="font-hd text-[clamp(40px,10vw,64px)] leading-none text-hi">{p.big}</span>
-              <span className="font-mono text-xs uppercase tracking-[0.12em] text-mute">{p.small}</span>
-            </li>
+    <section id="proof" className="bg-paper text-black">
+      <div className="gutter mx-auto max-w-[1280px] py-16 md:py-24">
+        <Reveal className="mb-10 flex flex-col gap-4 md:mb-14">
+          <Label dark>Proof</Label>
+          <h2 className="font-hd text-[clamp(34px,7.5vw,84px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]">
+            The numbers.<br /><span className="text-dimlt">Last 5 months.</span>
+          </h2>
+        </Reveal>
+        <div className="grid border-t border-black/15 md:grid-cols-3">
+          {[
+            { to: 500, suffix: '+', prefix: '', label: 'leads a week', note: 'Up from 280' },
+            { to: 5, suffix: '%', prefix: '+', label: 'ad spend', note: 'Barely moved' },
+            { to: 60, suffix: '%', prefix: '', label: 'of leads booked', note: 'Up from 45%' }
+          ].map((p, i) => (
+            <Reveal key={p.label} delay={i * 100} className="border-b border-black/15 py-8 md:border-b-0 md:border-r md:px-8 md:last:border-r-0 md:first:pl-0">
+              <p className="font-hd text-[clamp(60px,11vw,128px)] font-bold leading-none tracking-[-0.02em]"><CountUp to={p.to} suffix={p.suffix} prefix={p.prefix} /></p>
+              <p className="mt-3 font-mono text-[13px] uppercase tracking-[0.12em]">{p.label}</p>
+              <p className="mt-1 text-[15px] text-black/55">{p.note}</p>
+            </Reveal>
           ))}
-        </ul>
-        <p className="mt-4 font-mono text-[12px] text-mute">Home-visit flooring retailer. Google and Facebook ads.</p>
+        </div>
+        <p className="mt-6 font-mono text-[12px] text-black/55">Home-visit flooring retailer. Google and Facebook ads.</p>
       </div>
     </section>
   );
 }
 
-/* ---------- problems: swipe strip on mobile ---------- */
+/* ---------- about (dark band) ---------- */
 
-const PROBLEMS = [
-  { k: 'Enquiries', t: 'Leads from everywhere.', d: 'Calls, forms, messages. No source logged.' },
-  { k: 'Adverts', t: 'Spend on a hunch.', d: 'Nobody can say what a booked visit cost.' },
-  { k: 'Quotes', t: 'Price sent. Silence.', d: 'Quotes go cold. The rival rang first.' }
-];
-
-function Problems() {
-  const [idx, setIdx] = useState(0);
-  const ref = useRef(null);
-  const onScroll = () => {
-    const el = ref.current;
-    if (!el) return;
-    const i = Math.round((el.scrollLeft / (el.scrollWidth - el.clientWidth || 1)) * (PROBLEMS.length - 1));
-    setIdx(i);
-  };
+function About() {
   return (
-    <section id="problem" className="border-b border-line">
-      <div className="gutter mx-auto max-w-[1280px] py-10 md:border-x md:border-line md:py-20">
-        <div className="mb-6 flex flex-col gap-3 md:mb-10">
-          <Tag>[ The problem ]</Tag>
-          <h2 className="font-hd text-[clamp(34px,8.5vw,64px)] uppercase leading-[0.95]">The sale is at the kitchen table. The marketing isn't.</h2>
-        </div>
-        <div
-          ref={ref}
-          onScroll={onScroll}
-          className="noscroll -mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 md:mx-0 md:grid md:grid-cols-[1.3fr_1fr_1fr] md:gap-0 md:overflow-visible md:px-0 md:border md:border-line"
-          style={{ scrollPaddingLeft: 16 }}
-        >
-          {PROBLEMS.map((p, i) => (
-            <article key={p.k} className="glow flex shrink-0 basis-[80%] snap-start flex-col gap-3 border border-line bg-char p-6 sm:basis-[55%] md:basis-auto md:border-0 md:border-r md:border-line md:bg-transparent md:p-8 md:last:border-r-0">
-              <Tag>{p.k}</Tag>
-              <h3 className="font-hd text-[30px] uppercase leading-none md:text-[34px]">{p.t}</h3>
-              <p className="text-mute">{p.d}</p>
-            </article>
-          ))}
-        </div>
-        <div className="mt-4 flex items-center gap-3 md:hidden" aria-hidden="true">
-          {PROBLEMS.map((p, i) => (
-            <span key={p.k} className={'h-1 w-8 ' + (i === idx ? 'bg-hi' : 'bg-line')}></span>
-          ))}
-          <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.12em] text-mute">Swipe</span>
-        </div>
+    <section id="about" className="bg-ink">
+      <div className="gutter mx-auto max-w-[1280px] py-16 md:py-28">
+        <Reveal className="flex flex-col gap-6">
+          <Label>About</Label>
+          <h2 className="font-hd text-[clamp(34px,7.5vw,84px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]">
+            Hi, I'm Alex.<br /><span className="text-dim">You get me, not a junior.</span>
+          </h2>
+          <p className="max-w-[480px] text-[19px] text-mute">I work alongside sales reps every day at a home-visit flooring company. The person on the call is the person doing the work.</p>
+        </Reveal>
       </div>
     </section>
   );
 }
 
-/* ---------- five things: accordion on mobile ---------- */
+/* ---------- five things (light band, stacked rows) ---------- */
 
 const THINGS = [
-  { k: 'A', t: 'Tracked enquiries', d: 'Every enquiry logged against its source.', span: 'md:col-span-7' },
-  { k: 'B', t: 'Ads that book visits', d: 'Google and Facebook, aimed at your patch.', span: 'md:col-span-5' },
-  { k: 'C', t: 'Booking form', d: 'Postcode check. Straight into the diary.', span: 'md:col-span-4' },
-  { k: 'D', t: 'Follow-up', d: 'Reminders and quote chasers.', span: 'md:col-span-4' },
-  { k: 'E', t: 'Monthly report', d: 'One page. Leads, cost, jobs.', span: 'md:col-span-4' }
+  { t: 'Tracked enquiries', d: 'Every enquiry logged against its source.' },
+  { t: 'Ads that book visits', d: 'Google and Facebook, aimed at your patch.' },
+  { t: 'Booking form', d: 'Postcode check. Straight into the diary.' },
+  { t: 'Follow-up', d: 'Reminders and quote chasers.' },
+  { t: 'Monthly report', d: 'One page. Leads, cost, jobs.' }
 ];
 
 function Things() {
-  const [open, setOpen] = useState(0);
   return (
-    <section id="what" className="dots border-b border-line">
-      <div className="gutter mx-auto max-w-[1280px] py-10 md:border-x md:border-line md:py-20">
-        <div className="mb-6 flex flex-col gap-3 md:mb-10">
-          <Tag>[ What you get ]</Tag>
-          <h2 className="font-hd text-[clamp(34px,8.5vw,64px)] uppercase leading-[0.95]">Five things. All measured.</h2>
-        </div>
-        <div className="flex flex-col gap-2 md:grid md:grid-cols-12 md:gap-3">
-          {THINGS.map((x, i) => {
-            const isOpen = open === i;
-            return (
-              <div key={x.k} className={'border bg-ink ' + (isOpen ? 'border-hi ' : 'border-line ') + x.span}>
-                <button
-                  type="button"
-                  aria-expanded={isOpen}
-                  aria-controls={'thing-' + x.k}
-                  onClick={() => setOpen(isOpen ? -1 : i)}
-                  className="flex min-h-[56px] w-full items-center gap-4 px-4 py-3 text-left md:pointer-events-none md:px-6 md:pt-6 md:pb-0"
-                >
-                  <span className="font-mono text-xs text-hi">{x.k} /</span>
-                  <span className="flex-1 font-hd text-[24px] uppercase leading-none md:text-[30px]">{x.t}</span>
-                  <svg className={'h-5 w-5 shrink-0 text-hi transition-transform md:hidden ' + (isOpen ? 'rotate-45' : '')} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" aria-hidden="true">
-                    <path d="M12 4v16M4 12h16" />
-                  </svg>
-                </button>
-                <div id={'thing-' + x.k} className={(isOpen ? 'block' : 'hidden') + ' px-4 pb-4 text-mute md:block md:px-6 md:pb-6 md:pt-3'}>
-                  {x.d}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <section id="what" className="bg-paper text-black">
+      <div className="gutter mx-auto max-w-[1280px] py-16 md:py-24">
+        <Reveal className="mb-10 flex flex-col gap-4 md:mb-14">
+          <Label dark>What you get</Label>
+          <h2 className="font-hd text-[clamp(34px,7.5vw,84px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]">
+            Five things.<br /><span className="text-dimlt">All measured.</span>
+          </h2>
+        </Reveal>
+        <ul className="m-0 list-none border-t border-black/15 p-0">
+          {THINGS.map((x, i) => (
+            <li key={x.t}>
+              <Reveal delay={i * 60} className="grid gap-1 border-b border-black/15 py-6 md:grid-cols-[80px_1.2fr_1fr] md:items-baseline md:gap-6 md:py-8">
+                <span className="font-mono text-[12px] tracking-[0.12em] text-black/50">{'(0' + (i + 1) + ')'}</span>
+                <h3 className="font-hd text-[clamp(24px,3.6vw,40px)] font-bold uppercase leading-[1.05]">{x.t}</h3>
+                <p className="text-[17px] text-black/60">{x.d}</p>
+              </Reveal>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
 }
 
-/* ---------- three steps: blueprint timeline ---------- */
+/* ---------- three steps (dark band) ---------- */
 
 const STEPS = [
   { n: '01', t: 'A 15-minute call', d: 'How work reaches you now.' },
@@ -368,21 +345,22 @@ const STEPS = [
 
 function Steps() {
   return (
-    <section id="how" className="border-b border-line">
-      <div className="gutter mx-auto grid max-w-[1280px] gap-8 py-10 md:grid-cols-12 md:gap-12 md:border-x md:border-line md:py-20">
-        <div className="flex flex-col gap-3 md:col-span-5">
-          <Tag>[ How it runs ]</Tag>
-          <h2 className="font-hd text-[clamp(34px,8.5vw,64px)] uppercase leading-[0.95]">Three steps.</h2>
-        </div>
-        <ol className="m-0 list-none p-0 md:col-span-7">
+    <section id="how" className="bg-ink">
+      <div className="gutter mx-auto max-w-[1280px] py-16 md:py-24">
+        <Reveal className="mb-10 flex flex-col gap-4 md:mb-14">
+          <Label>How it runs</Label>
+          <h2 className="font-hd text-[clamp(34px,7.5vw,84px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]">
+            Three steps.<br /><span className="text-dim">Nowt fancy.</span>
+          </h2>
+        </Reveal>
+        <ol className="m-0 list-none border-t border-white/15 p-0">
           {STEPS.map((s, i) => (
-            <li key={s.n} className="relative flex gap-5 border-l-[3px] border-hi pb-8 pl-5 last:pb-0 md:gap-8 md:pl-8">
-              <span className="absolute -left-[9px] top-2 h-[15px] w-[15px] bg-hi" aria-hidden="true"></span>
-              <span className="font-hd text-[56px] leading-none text-hi md:text-[80px]">{s.n}</span>
-              <div className="flex flex-col gap-1 pt-1">
-                <h3 className="font-hd text-[26px] uppercase leading-none md:text-[32px]">{s.t}</h3>
-                <p className="text-mute">{s.d}</p>
-              </div>
+            <li key={s.n}>
+              <Reveal delay={i * 80} className="grid grid-cols-[72px_1fr] items-baseline gap-4 border-b border-white/15 py-7 md:grid-cols-[160px_1.2fr_1fr] md:gap-6 md:py-9">
+                <span className="font-hd text-[clamp(48px,7vw,96px)] font-bold leading-none text-hi">{s.n}</span>
+                <h3 className="font-hd text-[clamp(24px,3.6vw,40px)] font-bold uppercase leading-[1.05]">{s.t}</h3>
+                <p className="col-start-2 text-[17px] text-mute md:col-start-3">{s.d}</p>
+              </Reveal>
             </li>
           ))}
         </ol>
@@ -391,23 +369,7 @@ function Steps() {
   );
 }
 
-/* ---------- about ---------- */
-
-function About() {
-  return (
-    <section id="about" className="dots border-b border-line">
-      <div className="gutter mx-auto max-w-[1280px] py-10 md:border-x md:border-line md:py-16">
-        <div className="flex flex-col gap-5">
-          <Tag>[ Who is on the tools ]</Tag>
-          <h2 className="font-hd text-[clamp(34px,8.5vw,64px)] uppercase leading-[0.95]">Hi, I'm Alex. You get me, not a junior.</h2>
-          <p className="max-w-[460px] text-mute">I work alongside sales reps every day at a home-visit flooring company. The person on the call is the person doing the work.</p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ---------- contact ---------- */
+/* ---------- contact (yellow band) ---------- */
 
 function Contact() {
   const [copied, setCopied] = useState(false);
@@ -423,18 +385,18 @@ function Contact() {
   };
   return (
     <section id="contact" className="bg-hi text-black">
-      <div className="gutter mx-auto flex max-w-[1280px] flex-col gap-8 py-12 md:flex-row md:items-end md:justify-between md:py-20">
-        <div className="flex flex-col gap-4">
-          <p className="font-mono text-xs font-bold uppercase tracking-[0.14em]">[ Ring me ]</p>
-          <h2 className="font-hd text-[clamp(44px,12vw,96px)] uppercase leading-[0.95]">15 minutes. Straight answers.</h2>
-        </div>
-        <div className="flex flex-col items-start gap-4">
-          <a href="#contact" className="rounded-sm bg-black px-7 py-4 font-mono text-sm font-bold uppercase tracking-[0.1em] text-hi hover:shadow-[0_0_0_2px_#000]">Book a 15-minute call</a>
+      <div className="gutter mx-auto flex max-w-[1280px] flex-col gap-10 py-16 md:flex-row md:items-end md:justify-between md:py-24">
+        <Reveal className="flex flex-col gap-5">
+          <Label dark>Contact</Label>
+          <h2 className="font-hd text-[clamp(44px,10vw,120px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br />Straight answers.</h2>
+        </Reveal>
+        <Reveal delay={120} className="flex flex-col items-start gap-4">
+          <a href="#contact" className="btn rounded-[4px] bg-black px-8 py-4 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black">Book a 15-minute call</a>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="break-all font-mono text-sm font-medium">{email}</span>
-            <button type="button" onClick={copy} className="rounded-sm border border-black px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em]">{copied ? 'Copied' : 'Copy'}</button>
+            <span className="break-all font-mono text-[14px] font-medium">{email}</span>
+            <button type="button" onClick={copy} className="rounded-[4px] border border-black px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-black hover:text-hi">{copied ? 'Copied' : 'Copy'}</button>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -442,10 +404,10 @@ function Contact() {
 
 function Footer() {
   return (
-    <footer className="border-t border-line bg-ink">
-      <div className="gutter mx-auto flex max-w-[1280px] flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between md:border-x md:border-line">
-        <Logo />
-        <p className="text-sm text-mute">Northallerton, North East England.</p>
+    <footer className="bg-ink">
+      <div className="gutter mx-auto flex max-w-[1280px] flex-col gap-4 py-8 md:flex-row md:items-center md:justify-between">
+        <Logo w={110} />
+        <p className="text-[15px] text-mute">Northallerton, North East England.</p>
         <p className="max-w-[320px] font-mono text-[11px] text-mute">© Winch Marketing. Anonymous visit tracking, no cookies.</p>
       </div>
     </footer>
@@ -457,7 +419,7 @@ function Footer() {
 function StickyBar() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 bg-hi md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-      <a href="#contact" className="gutter flex min-h-[56px] items-center justify-center gap-3 font-mono text-sm font-bold uppercase tracking-[0.1em] text-black">
+      <a href="#contact" className="gutter flex min-h-[56px] items-center justify-center gap-3 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black">
         <PhoneIcon />
         Book a 15-min call
       </a>
@@ -472,7 +434,6 @@ function App() {
       <Header />
       <main>
         <Hero />
-        <TradeStrip />
         <Proof />
         <About />
         <Things />
@@ -489,5 +450,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>
-
-
