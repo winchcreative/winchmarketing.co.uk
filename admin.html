@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | Winch Marketing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { ink: '#0A0A0A', paper: '#F4F4F2', hi: '#F5C230', dim: '#7C7C82', mute: '#A1A1AA' },
+      fontFamily: {
+        body: ['Atkinson Hyperlegible', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'Consolas', 'monospace']
+      }
+    }
+  }
+};
+</script>
+<style>
+:root{color-scheme:dark}
+body{background:#0A0A0A;color:#FFFFFF;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0}
+h1,h2,p{margin:0}
+.gutter{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.btn{transition:background-color .15s ease,color .15s ease}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #F5C230;outline-offset:2px}
+.th{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;text-align:left;padding:10px 12px;white-space:nowrap}
+.td{padding:8px 12px;vertical-align:middle}
+.cell{width:100%;min-width:110px;background:transparent;border:1px solid transparent;border-radius:4px;padding:6px 8px;font:inherit;font-size:15px;color:inherit}
+.cell:hover{border-color:rgba(0,0,0,.25)}
+.cell:focus{background:#fff;border-color:#000}
+.cell.saving{border-color:#F5C230}
+.cell.err{border-color:#c00}
+.mono{font-family:'JetBrains Mono',monospace}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<main id="login" class="gutter flex min-h-screen items-center justify-center bg-ink" hidden>
+  <form id="loginForm" class="w-full max-w-[380px] rounded-[4px] border border-white/15 p-6" autocomplete="on">
+    <p class="mono text-[12px] uppercase tracking-[0.14em] text-hi">Winch Marketing</p>
+    <h1 class="mb-6 mt-1 text-3xl font-bold">Admin</h1>
+    <label class="mono mb-1 block text-[11px] uppercase tracking-[0.12em] text-mute" for="email">Email</label>
+    <input id="email" type="email" required autocomplete="username" class="mb-4 w-full rounded-[4px] border border-white/25 bg-transparent px-3 py-3 text-white">
+    <label class="mono mb-1 block text-[11px] uppercase tracking-[0.12em] text-mute" for="password">Password</label>
+    <input id="password" type="password" required autocomplete="current-password" class="mb-4 w-full rounded-[4px] border border-white/25 bg-transparent px-3 py-3 text-white">
+    <p id="loginErr" class="mb-4 text-[15px] text-[#ff8a80]" role="alert" hidden></p>
+    <button type="submit" class="btn w-full rounded-[4px] bg-hi px-5 py-3 font-bold text-black hover:bg-white">Sign in</button>
+  </form>
+</main>
+
+<!-- APP -->
+<div id="app" hidden>
+  <header class="border-b border-white/10 bg-ink">
+    <div class="gutter mx-auto flex max-w-[1280px] items-center justify-between py-4">
+      <p class="mono text-[12px] uppercase tracking-[0.14em]"><span class="text-hi">Winch</span> / Admin</p>
+      <div class="flex items-center gap-4">
+        <span id="who" class="mono hidden text-[12px] text-mute md:inline"></span>
+        <button id="refresh" class="btn rounded-[4px] border border-white/25 px-3 py-2 mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-white hover:text-black">Refresh</button>
+        <button id="signout" class="btn rounded-[4px] border border-white/25 px-3 py-2 mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-hi hover:text-black">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="bg-ink">
+    <div class="gutter mx-auto max-w-[1280px] py-12">
+      <h2 class="text-3xl font-bold">Visits by ref</h2>
+      <p id="visitsMeta" class="mono mt-2 text-[12px] text-mute"></p>
+      <div class="mt-6 overflow-x-auto rounded-[4px] border border-white/15">
+        <table class="w-full border-collapse">
+          <thead class="bg-white/5"><tr>
+            <th class="th">Ref</th><th class="th">Viewers</th><th class="th">Last seen</th>
+            <th class="th">Scrolled to end</th><th class="th">Clicked Book a call</th><th class="th">Mobile / Desktop</th>
+          </tr></thead>
+          <tbody id="visitsBody"></tbody>
+        </table>
+      </div>
+      <p id="visitsErr" class="mt-4 text-[#ff8a80]" role="alert" hidden></p>
+    </div>
+  </section>
+
+  <section class="bg-paper text-black">
+    <div class="gutter mx-auto max-w-[1280px] py-12">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 class="text-3xl font-bold">Prospects</h2>
+          <p class="mono mt-2 text-[12px] text-dim">Edit a cell, then tab or click away to save.</p>
+        </div>
+        <button id="addProspect" class="btn rounded-[4px] bg-black px-5 py-3 mono text-[12px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-hi hover:text-black">Add prospect</button>
+      </div>
+      <div class="mt-6 overflow-x-auto rounded-[4px] border border-black/20 bg-white">
+        <table class="w-full border-collapse">
+          <thead class="bg-black text-white"><tr>
+            <th class="th">Business</th><th class="th">Contact</th><th class="th">Email</th><th class="th">Trade</th>
+            <th class="th">Status</th><th class="th">Ref</th><th class="th">Last contacted</th><th class="th">Notes</th><th class="th"></th>
+          </tr></thead>
+          <tbody id="prospectsBody"></tbody>
+        </table>
+      </div>
+      <p id="prospectsErr" class="mt-4 text-[#b00020]" role="alert" hidden></p>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* Publishable key only. Access is enforced by Row Level Security (see supabase/admin.sql). */
+const SB_URL = 'https://esnopodsswwtsbavjwen.supabase.co';
+const SB_KEY = 'sb_publishable_IA0R66sBAt21zEDL0Vw7dQ_ybJNJDhF';
+const SITE = 'https://winchmarketing.co.uk';
+const STATUSES = ['new', 'emailed', 'viewed', 'booked', 'won', 'lost'];
+const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const showErr = (id, msg) => { const el = $(id); el.textContent = msg || ''; el.hidden = !msg; };
+
+/* ---------- auth (sign in only, no signup UI) ---------- */
+
+function showLogin() { $('app').hidden = true; $('login').hidden = false; }
+async function showApp(session) {
+  $('login').hidden = true; $('app').hidden = false;
+  $('who').textContent = session.user.email;
+  await Promise.all([loadVisits(), loadProspects()]);
+}
+
+$('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showErr('loginErr', '');
+  const { data, error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+  if (error) { showErr('loginErr', 'Sign in failed. Check your email and password.'); return; }
+  $('password').value = '';
+  showApp(data.session);
+});
+
+$('signout').addEventListener('click', async () => { await sb.auth.signOut(); showLogin(); });
+$('refresh').addEventListener('click', () => { loadVisits(); loadProspects(); });
+
+sb.auth.getSession().then(({ data }) => (data.session ? showApp(data.session) : showLogin()));
+sb.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') showLogin(); });
+
+/* ---------- visits ---------- */
+
+async function fetchAllVisits() {
+  const rows = [];
+  const PAGE = 1000, MAX = 20000;
+  for (let from = 0; from < MAX; from += PAGE) {
+    const { data, error } = await sb.from('visits')
+      .select('ref,session,type,detail,device,created_at')
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return rows;
+}
+
+const fmtDate = (iso) => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+};
+
+async function loadVisits() {
+  showErr('visitsErr', '');
+  let rows;
+  try { rows = await fetchAllVisits(); }
+  catch (e) { showErr('visitsErr', 'Could not load visits: ' + e.message); return; }
+
+  const by = {};
+  rows.forEach((r) => {
+    const g = by[r.ref] || (by[r.ref] = { ref: r.ref, last: r.created_at, view: new Set(), end: new Set(), cta: new Set(), mobile: new Set(), desktop: new Set() });
+    if (r.created_at > g.last) g.last = r.created_at;
+    if (r.type === 'view') g.view.add(r.session);
+    if (r.type === 'scroll' && r.detail === '90') g.end.add(r.session);
+    if (r.type === 'cta') g.cta.add(r.session);
+    (r.device === 'mobile' ? g.mobile : g.desktop).add(r.session);
+  });
+  const groups = Object.values(by).sort((a, b) => (a.last < b.last ? 1 : -1));
+
+  $('visitsMeta').textContent = rows.length + ' events across ' + groups.length + ' refs. Viewers = unique sessions that stayed 5s or scrolled.';
+  $('visitsBody').innerHTML = groups.length ? groups.map((g) =>
+    '<tr class="border-t border-white/10">' +
+    '<td class="td mono font-bold text-hi">' + esc(g.ref) + '</td>' +
+    '<td class="td">' + g.view.size + '</td>' +
+    '<td class="td mono text-[14px]">' + esc(fmtDate(g.last)) + '</td>' +
+    '<td class="td">' + g.end.size + '</td>' +
+    '<td class="td">' + g.cta.size + '</td>' +
+    '<td class="td mono text-[14px]">' + g.mobile.size + ' / ' + g.desktop.size + '</td></tr>'
+  ).join('') : '<tr><td class="td text-mute" colspan="6">No visits yet.</td></tr>';
+}
+
+/* ---------- prospects ---------- */
+
+let prospects = [];
+
+function gmailLink(p) {
+  const ref = p.ref || p.business.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  const first = (p.contact_name || '').trim().split(/\s+/)[0];
+  const subject = 'A quick look at ' + p.business;
+  const body = 'Hi ' + (first || 'there') + ',\n\nI put together a short page for ' + p.business + ' so you can see what I do:\n' +
+    SITE + '/?r=' + ref + '\n\nHave a look when you get a minute.\n\nAlex';
+  return 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(p.email || '') +
+    '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+function rowHtml(p) {
+  const inp = (f, type) => '<td class="td"><input class="cell" type="' + (type || 'text') + '" data-f="' + f + '" value="' + esc(p[f]) + '"></td>';
+  return '<tr class="border-t border-black/10" data-id="' + esc(p.id) + '">' +
+    inp('business') + inp('contact_name') + inp('email', 'email') + inp('trade') +
+    '<td class="td"><select class="cell" data-f="status">' + STATUSES.map((s) => '<option' + (s === p.status ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></td>' +
+    inp('ref') + inp('last_contacted', 'date') + inp('notes') +
+    '<td class="td"><a class="btn mono inline-block whitespace-nowrap rounded-[4px] bg-black px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-hi hover:text-black" ' +
+    'href="' + esc(gmailLink(p)) + '" target="_blank" rel="noopener" data-compose>Compose in Gmail</a></td></tr>';
+}
+
+function renderProspects() {
+  $('prospectsBody').innerHTML = prospects.length ? prospects.map(rowHtml).join('')
+    : '<tr><td class="td text-dim" colspan="9">No prospects yet. Click Add prospect.</td></tr>';
+}
+
+async function loadProspects() {
+  showErr('prospectsErr', '');
+  const { data, error } = await sb.from('prospects').select('*').order('created_at', { ascending: false });
+  if (error) { showErr('prospectsErr', 'Could not load prospects: ' + error.message); return; }
+  prospects = data;
+  renderProspects();
+}
+
+$('prospectsBody').addEventListener('change', async (e) => {
+  const el = e.target, tr = el.closest('tr');
+  if (!tr || !el.dataset.f) return;
+  const p = prospects.find((x) => x.id === tr.dataset.id);
+  const f = el.dataset.f;
+  let v = el.value.trim();
+  if (f === 'business' && !v) { el.value = p.business; return; }
+  if (f === 'ref') v = v.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+  const val = v === '' && f !== 'business' ? null : v;
+  el.classList.remove('err'); el.classList.add('saving');
+  const { error } = await sb.from('prospects').update({ [f]: val }).eq('id', p.id);
+  el.classList.remove('saving');
+  if (error) { el.classList.add('err'); showErr('prospectsErr', 'Save failed: ' + error.message); return; }
+  showErr('prospectsErr', '');
+  p[f] = val;
+  if (f === 'ref') el.value = val || '';
+  tr.querySelector('[data-compose]').href = gmailLink(p);
+});
+
+// Opening Gmail counts as contact: mark emailed and stamp the date if still new.
+$('prospectsBody').addEventListener('click', async (e) => {
+  const a = e.target.closest('[data-compose]');
+  if (!a) return;
+  const tr = a.closest('tr');
+  const p = prospects.find((x) => x.id === tr.dataset.id);
+  if (!p.email) { e.preventDefault(); showErr('prospectsErr', 'Add an email address for ' + p.business + ' first.'); return; }
+  if (p.status !== 'new') return;
+  const patch = { status: 'emailed', last_contacted: new Date().toISOString().slice(0, 10) };
+  const { error } = await sb.from('prospects').update(patch).eq('id', p.id);
+  if (!error) { Object.assign(p, patch); tr.querySelector('[data-f="status"]').value = patch.status; tr.querySelector('[data-f="last_contacted"]').value = patch.last_contacted; }
+});
+
+$('addProspect').addEventListener('click', async () => {
+  const business = prompt('Business name?');
+  if (!business || !business.trim()) return;
+  const { data, error } = await sb.from('prospects').insert({ business: business.trim(), ref: business.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) }).select().single();
+  if (error) { showErr('prospectsErr', 'Add failed: ' + error.message); return; }
+  prospects.unshift(data);
+  renderProspects();
+});
+</script>
+</body>
+</html>
