@@ -99,7 +99,7 @@ function useTracking() {
       if (p > 0.9) track('scroll', '90');
     };
     const onClick = (e) => {
-      const a = e.target.closest && e.target.closest('a[href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener"]');
+      const a = e.target.closest && e.target.closest('a[href^="https://calendar.app.google"]');
       if (a) track('cta', (a.textContent || '').trim().slice(0, 30));
     };
     window.addEventListener('scroll', onScroll, { passive: true });
