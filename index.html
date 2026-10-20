@@ -99,7 +99,7 @@ function useTracking() {
       if (p > 0.9) track('scroll', '90');
     };
     const onClick = (e) => {
-      const a = e.target.closest && e.target.closest('a[href="#contact"]');
+      const a = e.target.closest && e.target.closest('a[href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener"]');
       if (a) track('cta', (a.textContent || '').trim().slice(0, 30));
     };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -178,7 +178,7 @@ function Header() {
           <a className="text-mute hover:text-hi" href="#about">About</a>
           <a className="text-mute hover:text-hi" href="#what">What you get</a>
           <a className="text-mute hover:text-hi" href="#how">How it runs</a>
-          <a className="btn rounded-[4px] bg-hi px-5 py-3 font-bold text-black hover:bg-white" href="#contact">Book a call</a>
+          <a className="btn rounded-[4px] bg-hi px-5 py-3 font-bold text-black hover:bg-white" href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener">Book a call</a>
         </nav>
       </div>
     </header>
@@ -232,7 +232,7 @@ function Hero() {
           </Reveal>
           <Reveal delay={160} className="flex flex-col gap-5 lg:max-w-[240px]">
             <p className="text-[19px] leading-snug text-white/85">For home-visit and rep-led trades.</p>
-            <a href="#contact" className="btn hidden rounded-[4px] bg-hi px-6 py-4 text-center font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black hover:bg-white lg:inline-block">Book a call</a>
+            <a href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" className="btn hidden rounded-[4px] bg-hi px-6 py-4 text-center font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black hover:bg-white lg:inline-block">Book a call</a>
           </Reveal>
         </div>
       </div>
@@ -462,7 +462,7 @@ function Contact() {
           <h2 className="font-hd text-[clamp(44px,10vw,120px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br />Straight answers.</h2>
         </Reveal>
         <Reveal delay={120} className="flex flex-col items-start gap-4">
-          <a href="#contact" className="btn rounded-[4px] bg-black px-8 py-4 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black">Book a 15-minute call</a>
+          <a href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" className="btn rounded-[4px] bg-black px-8 py-4 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black">Book a 15-minute call</a>
           <div className="flex flex-wrap items-center gap-3">
             <span className="break-all font-mono text-[14px] font-medium">{email}</span>
             <button type="button" onClick={copy} className="rounded-[4px] border border-black px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-black hover:text-hi">{copied ? 'Copied' : 'Copy'}</button>
@@ -490,7 +490,7 @@ function Footer() {
 function StickyBar() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 bg-hi md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-      <a href="#contact" className="gutter flex min-h-[56px] items-center justify-center gap-3 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black">
+      <a href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" className="gutter flex min-h-[56px] items-center justify-center gap-3 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black">
         <PhoneIcon />
         Book a 15-min call
       </a>
