@@ -24,16 +24,16 @@ drop policy if exists "owner update prospects" on public.prospects;
 
 create policy "owner select prospects" on public.prospects
   for select to authenticated
-  using ((select auth.jwt() ->> 'email') = 'alexscottmills@gmail.com');
+  using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
 
 create policy "owner insert prospects" on public.prospects
   for insert to authenticated
-  with check ((select auth.jwt() ->> 'email') = 'alexscottmills@gmail.com');
+  with check ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
 
 create policy "owner update prospects" on public.prospects
   for update to authenticated
-  using ((select auth.jwt() ->> 'email') = 'alexscottmills@gmail.com')
-  with check ((select auth.jwt() ->> 'email') = 'alexscottmills@gmail.com');
+  using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk')
+  with check ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
 
 -- No delete policy on purpose: rows cannot be deleted from the browser.
 
@@ -43,4 +43,4 @@ drop policy if exists "owner select visits" on public.visits;
 
 create policy "owner select visits" on public.visits
   for select to authenticated
-  using ((select auth.jwt() ->> 'email') = 'alexscottmills@gmail.com');
+  using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
