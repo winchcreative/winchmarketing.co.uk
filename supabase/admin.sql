@@ -44,3 +44,20 @@ drop policy if exists "owner select visits" on public.visits;
 create policy "owner select visits" on public.visits
   for select to authenticated
   using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
+
+-- 3. Outreach timeline (public.outreach is filled by the Gmail script)
+-- Allow the 'replied' status, which the admin page now sets automatically.
+alter table public.prospects drop constraint if exists prospects_status_check;
+alter table public.prospects add constraint prospects_status_check
+  check (status in ('new','emailed','viewed','replied','booked','won','lost'));
+
+-- Let only you read outreach from the browser.
+-- WARNING: enabling RLS blocks any client without a policy. The Gmail script must
+-- use the service_role key (which bypasses RLS) or have its own insert/update policy.
+alter table public.outreach enable row level security;
+
+drop policy if exists "owner select outreach" on public.outreach;
+
+create policy "owner select outreach" on public.outreach
+  for select to authenticated
+  using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
