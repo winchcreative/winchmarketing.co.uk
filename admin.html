@@ -70,6 +70,23 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
   <section class="bg-ink">
     <div class="gutter mx-auto max-w-[1280px] py-12">
+      <h2 class="text-3xl font-bold">Outreach timeline</h2>
+      <p id="timelineMeta" class="mono mt-2 text-[12px] text-mute"></p>
+      <div class="mt-6 overflow-x-auto rounded-[4px] border border-white/15">
+        <table class="w-full border-collapse">
+          <thead class="bg-white/5"><tr>
+            <th class="th">Ref</th><th class="th">Email sent</th><th class="th">First visit</th><th class="th">Last visit</th>
+            <th class="th">Book a call</th><th class="th">Replied</th><th class="th">Next</th>
+          </tr></thead>
+          <tbody id="timelineBody"></tbody>
+        </table>
+      </div>
+      <p id="timelineErr" class="mt-4 text-[#ff8a80]" role="alert" hidden></p>
+    </div>
+  </section>
+
+  <section class="border-t border-white/10 bg-ink">
+    <div class="gutter mx-auto max-w-[1280px] py-12">
       <h2 class="text-3xl font-bold">Visits by ref</h2>
       <p id="visitsMeta" class="mono mt-2 text-[12px] text-mute"></p>
       <div class="mt-6 overflow-x-auto rounded-[4px] border border-white/15">
@@ -114,7 +131,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 const SB_URL = 'https://esnopodsswwtsbavjwen.supabase.co';
 const SB_KEY = 'sb_publishable_IA0R66sBAt21zEDL0Vw7dQ_ybJNJDhF';
 const SITE = 'https://winchmarketing.co.uk';
-const STATUSES = ['new', 'emailed', 'viewed', 'booked', 'won', 'lost'];
+const STATUSES = ['new', 'emailed', 'viewed', 'replied', 'booked', 'won', 'lost'];
+const FOLLOW_UP_DAYS = 3;
 const sb = supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
 
 const $ = (id) => document.getElementById(id);
@@ -127,7 +145,7 @@ function showLogin() { $('app').hidden = true; $('login').hidden = false; }
 async function showApp(session) {
   $('login').hidden = true; $('app').hidden = false;
   $('who').textContent = session.user.email;
-  await Promise.all([loadVisits(), loadProspects()]);
+  await loadAll();
 }
 
 $('loginForm').addEventListener('submit', async (e) => {
@@ -140,20 +158,28 @@ $('loginForm').addEventListener('submit', async (e) => {
 });
 
 $('signout').addEventListener('click', async () => { await sb.auth.signOut(); showLogin(); });
-$('refresh').addEventListener('click', () => { loadVisits(); loadProspects(); });
+$('refresh').addEventListener('click', loadAll);
 
 sb.auth.getSession().then(({ data }) => (data.session ? showApp(data.session) : showLogin()));
 sb.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') showLogin(); });
 
 /* ---------- visits ---------- */
 
-async function fetchAllVisits() {
+let visitRows = null, outreachRows = null, prospectsOk = false;
+
+async function loadAll() {
+  visitRows = outreachRows = null; prospectsOk = false;
+  await Promise.all([loadVisits(), loadOutreach(), loadProspects()]);
+  await buildTimeline();
+}
+
+async function fetchAll(table, cols, order) {
   const rows = [];
   const PAGE = 1000, MAX = 20000;
   for (let from = 0; from < MAX; from += PAGE) {
-    const { data, error } = await sb.from('visits')
-      .select('ref,session,type,detail,device,created_at')
-      .order('created_at', { ascending: false })
+    const { data, error } = await sb.from(table)
+      .select(cols)
+      .order(order, { ascending: false })
       .range(from, from + PAGE - 1);
     if (error) throw error;
     rows.push(...data);
@@ -170,9 +196,10 @@ const fmtDate = (iso) => {
 async function loadVisits() {
   showErr('visitsErr', '');
   let rows;
-  try { rows = await fetchAllVisits(); }
+  try { rows = await fetchAll('visits', 'ref,session,type,detail,device,created_at', 'created_at'); }
   catch (e) { showErr('visitsErr', 'Could not load visits: ' + e.message); return; }
 
+  visitRows = rows;
   const by = {};
   rows.forEach((r) => {
     const g = by[r.ref] || (by[r.ref] = { ref: r.ref, last: r.created_at, view: new Set(), end: new Set(), cta: new Set(), mobile: new Set(), desktop: new Set() });
@@ -194,6 +221,86 @@ async function loadVisits() {
     '<td class="td">' + g.cta.size + '</td>' +
     '<td class="td mono text-[14px]">' + g.mobile.size + ' / ' + g.desktop.size + '</td></tr>'
   ).join('') : '<tr><td class="td text-mute" colspan="6">No visits yet.</td></tr>';
+}
+
+/* ---------- outreach timeline ---------- */
+
+const norm = (r) => String(r || '').trim().toLowerCase();
+const fmtGap = (ms) => {
+  const m = Math.round(ms / 60000);
+  if (m < 60) return m + 'm';
+  const h = Math.round(m / 60);
+  return h < 48 ? h + 'h' : Math.round(h / 24) + 'd';
+};
+
+async function loadOutreach() {
+  try { outreachRows = await fetchAll('outreach', 'message_id,thread_id,ref,to_email,subject,sent_at,replied,replied_at', 'sent_at'); }
+  catch (e) { showErr('timelineErr', 'Could not load outreach: ' + e.message); }
+}
+
+// One row per ref, joining outreach (sent/replied), visits (events after the first email) and prospects (name).
+function computeTimeline() {
+  const events = {}, mails = {};
+  visitRows.forEach((v) => { const k = norm(v.ref); (events[k] = events[k] || []).push({ t: new Date(v.created_at).getTime(), type: v.type }); });
+  outreachRows.forEach((o) => { const k = norm(o.ref); if (k && o.sent_at) (mails[k] = mails[k] || []).push(o); });
+  const now = Date.now();
+  return Object.keys(mails).map((ref) => {
+    const ms = mails[ref];
+    const sent = Math.min.apply(null, ms.map((m) => new Date(m.sent_at).getTime()));
+    const after = (events[ref] || []).filter((e) => e.t >= sent);
+    const first = after.length ? Math.min.apply(null, after.map((e) => e.t)) : null;
+    const last = after.length ? Math.max.apply(null, after.map((e) => e.t)) : null;
+    const rep = ms.filter((m) => m.replied);
+    const repTimes = rep.map((m) => m.replied_at && new Date(m.replied_at).getTime()).filter(Boolean);
+    const replied = rep.length > 0;
+    const pr = prospects.find((x) => norm(x.ref) === ref);
+    return {
+      ref: ref, business: pr ? pr.business : '', to: ms[0].to_email, mails: ms.length,
+      sent: sent, first: first, last: last,
+      clicked: after.some((e) => e.type === 'cta'),
+      replied: replied, repliedAt: repTimes.length ? Math.min.apply(null, repTimes) : null,
+      followUp: first !== null && !replied && now - first >= FOLLOW_UP_DAYS * 864e5,
+      status: replied ? 'replied' : first !== null ? 'viewed' : 'emailed'
+    };
+  }).sort((a, b) => (b.followUp - a.followUp) || (Math.max(b.sent, b.last || 0, b.repliedAt || 0) - Math.max(a.sent, a.last || 0, a.repliedAt || 0)));
+}
+
+const RANK = { new: 0, emailed: 1, viewed: 2, replied: 3 };
+
+// Only ever moves a status forward. booked, won and lost are manual and never touched.
+async function syncStatuses(rows) {
+  if (!prospectsOk) return;
+  for (const r of rows) {
+    for (const p of prospects) {
+      if (norm(p.ref) !== r.ref || RANK[p.status] === undefined || RANK[p.status] >= RANK[r.status]) continue;
+      const { error } = await sb.from('prospects').update({ status: r.status }).eq('id', p.id);
+      if (error) { showErr('timelineErr', 'Could not update status for ' + p.business + ': ' + error.message + ' (has supabase/admin.sql been run?)'); return; }
+      p.status = r.status;
+      const sel = document.querySelector('#prospectsBody tr[data-id="' + p.id + '"] [data-f="status"]');
+      if (sel) sel.value = r.status;
+    }
+  }
+}
+
+async function buildTimeline() {
+  if (!visitRows || !outreachRows) { $('timelineBody').innerHTML = '<tr><td class="td text-mute" colspan="7">Timeline unavailable.</td></tr>'; return; }
+  const rows = computeTimeline();
+  const n = rows.filter((r) => r.followUp).length;
+  $('timelineMeta').textContent = rows.length + ' refs emailed, ' + n + ' to follow up. Follow up = visited, no reply, ' + FOLLOW_UP_DAYS + '+ days since first visit.';
+  const dash = '<span class="text-dim">-</span>';
+  const when = (t) => '<td class="td mono text-[14px]">' + esc(fmtDate(new Date(t).toISOString())) + '</td>';
+  $('timelineBody').innerHTML = rows.length ? rows.map((r) =>
+    '<tr class="border-t border-white/10">' +
+    '<td class="td"><span class="mono font-bold text-hi">' + esc(r.ref) + '</span><br><span class="text-[14px] text-mute">' + esc(r.business || r.to || '') + '</span></td>' +
+    when(r.sent).replace('</td>', (r.mails > 1 ? ' <span class="text-mute">x' + r.mails + '</span>' : '') + '</td>') +
+    (r.first !== null ? when(r.first).replace('</td>', ' <span class="text-mute">+' + fmtGap(r.first - r.sent) + '</span></td>') : '<td class="td">' + dash + '</td>') +
+    (r.last !== null ? when(r.last) : '<td class="td">' + dash + '</td>') +
+    '<td class="td">' + (r.clicked ? '<span class="font-bold text-hi">Clicked</span>' : dash) + '</td>' +
+    '<td class="td">' + (r.replied ? '<span class="font-bold text-hi">Replied</span>' + (r.repliedAt ? ' <span class="mono text-[14px] text-mute">' + esc(fmtDate(new Date(r.repliedAt).toISOString())) + '</span>' : '') : dash) + '</td>' +
+    '<td class="td">' + (r.followUp ? '<span class="mono rounded-[4px] bg-hi px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-black">Follow up</span>'
+      : '<span class="mono text-[12px] uppercase tracking-[0.1em] text-mute">' + (r.replied ? 'Replied' : r.first !== null ? 'Waiting' : 'No visit yet') + '</span>') + '</td></tr>'
+  ).join('') : '<tr><td class="td text-mute" colspan="7">No outreach yet.</td></tr>';
+  await syncStatuses(rows);
 }
 
 /* ---------- prospects ---------- */
@@ -230,6 +337,7 @@ async function loadProspects() {
   const { data, error } = await sb.from('prospects').select('*').order('created_at', { ascending: false });
   if (error) { showErr('prospectsErr', 'Could not load prospects: ' + error.message); return; }
   prospects = data;
+  prospectsOk = true;
   renderProspects();
 }
 
