@@ -61,3 +61,28 @@ drop policy if exists "owner select outreach" on public.outreach;
 create policy "owner select outreach" on public.outreach
   for select to authenticated
   using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
+
+-- 4. Hide + delete controls on the admin page
+-- Hidden flags (rows are filtered out of the admin page by default, never removed).
+alter table public.prospects add column if not exists hidden boolean not null default false;
+alter table public.outreach  add column if not exists hidden boolean not null default false;
+
+-- outreach: the browser may only change `hidden`, and can never delete
+-- (a Gmail sync script re-adds deleted rows). Column grant + no delete grant enforce it.
+-- The Gmail script must not write `hidden` when it syncs, or it will un-hide rows.
+revoke update, delete on public.outreach from authenticated;
+grant update (hidden) on public.outreach to authenticated;
+
+drop policy if exists "owner update outreach" on public.outreach;
+
+create policy "owner update outreach" on public.outreach
+  for update to authenticated
+  using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk')
+  with check ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');
+
+-- visits: you can delete test data. The public insert-only policy is NOT touched.
+drop policy if exists "owner delete visits" on public.visits;
+
+create policy "owner delete visits" on public.visits
+  for delete to authenticated
+  using ((select auth.jwt() ->> 'email') = 'hello@winchmarketing.co.uk');

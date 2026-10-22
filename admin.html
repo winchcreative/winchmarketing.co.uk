@@ -62,6 +62,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <p class="mono text-[12px] uppercase tracking-[0.14em]"><span class="text-hi">Winch</span> / Admin</p>
       <div class="flex items-center gap-4">
         <span id="who" class="mono hidden text-[12px] text-mute md:inline"></span>
+        <button id="toggleHidden" type="button" aria-pressed="false" class="btn rounded-[4px] border border-white/25 px-3 py-2 mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-white hover:text-black">Show hidden</button>
         <button id="refresh" class="btn rounded-[4px] border border-white/25 px-3 py-2 mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-white hover:text-black">Refresh</button>
         <button id="signout" class="btn rounded-[4px] border border-white/25 px-3 py-2 mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-hi hover:text-black">Sign out</button>
       </div>
@@ -76,7 +77,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <table class="w-full border-collapse">
           <thead class="bg-white/5"><tr>
             <th class="th">Ref</th><th class="th">Email sent</th><th class="th">First visit</th><th class="th">Last visit</th>
-            <th class="th">Book a call</th><th class="th">Replied</th><th class="th">Next</th>
+            <th class="th">Book a call</th><th class="th">Replied</th><th class="th">Next</th><th class="th"></th>
           </tr></thead>
           <tbody id="timelineBody"></tbody>
         </table>
@@ -93,7 +94,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <table class="w-full border-collapse">
           <thead class="bg-white/5"><tr>
             <th class="th">Ref</th><th class="th">Viewers</th><th class="th">Last seen</th>
-            <th class="th">Scrolled to end</th><th class="th">Clicked Book a call</th><th class="th">Mobile / Desktop</th>
+            <th class="th">Scrolled to end</th><th class="th">Clicked Book a call</th><th class="th">Mobile / Desktop</th><th class="th"></th>
           </tr></thead>
           <tbody id="visitsBody"></tbody>
         </table>
@@ -160,12 +161,25 @@ $('loginForm').addEventListener('submit', async (e) => {
 $('signout').addEventListener('click', async () => { await sb.auth.signOut(); showLogin(); });
 $('refresh').addEventListener('click', loadAll);
 
+// Hidden rows are filtered out everywhere by default; this brings them back (each gets an Unhide button).
+$('toggleHidden').addEventListener('click', () => { showHidden = !showHidden; renderTimeline(); renderProspects(); });
+
+function updateHiddenToggle() {
+  const n = timelineRows.filter((r) => r.hidden).length + prospects.filter((p) => p.hidden).length;
+  const b = $('toggleHidden');
+  b.textContent = 'Show hidden' + (n ? ' (' + n + ')' : '');
+  b.setAttribute('aria-pressed', showHidden ? 'true' : 'false');
+  b.classList.toggle('bg-hi', showHidden); b.classList.toggle('text-black', showHidden); b.classList.toggle('border-hi', showHidden);
+}
+
 sb.auth.getSession().then(({ data }) => (data.session ? showApp(data.session) : showLogin()));
 sb.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT') showLogin(); });
 
 /* ---------- visits ---------- */
 
 let visitRows = null, outreachRows = null, prospectsOk = false;
+let showHidden = false, timelineRows = [];
+const HIDDEN_HINT = ' (has section 4 of supabase/admin.sql been run?)';
 
 async function loadAll() {
   visitRows = outreachRows = null; prospectsOk = false;
@@ -202,7 +216,8 @@ async function loadVisits() {
   visitRows = rows;
   const by = {};
   rows.forEach((r) => {
-    const g = by[r.ref] || (by[r.ref] = { ref: r.ref, last: r.created_at, view: new Set(), end: new Set(), cta: new Set(), mobile: new Set(), desktop: new Set() });
+    const g = by[r.ref] || (by[r.ref] = { ref: r.ref, last: r.created_at, n: 0, view: new Set(), end: new Set(), cta: new Set(), mobile: new Set(), desktop: new Set() });
+    g.n++;
     if (r.created_at > g.last) g.last = r.created_at;
     if (r.type === 'view') g.view.add(r.session);
     if (r.type === 'scroll' && r.detail === '90') g.end.add(r.session);
@@ -219,9 +234,28 @@ async function loadVisits() {
     '<td class="td mono text-[14px]">' + esc(fmtDate(g.last)) + '</td>' +
     '<td class="td">' + g.end.size + '</td>' +
     '<td class="td">' + g.cta.size + '</td>' +
-    '<td class="td mono text-[14px]">' + g.mobile.size + ' / ' + g.desktop.size + '</td></tr>'
-  ).join('') : '<tr><td class="td text-mute" colspan="6">No visits yet.</td></tr>';
+    '<td class="td mono text-[14px]">' + g.mobile.size + ' / ' + g.desktop.size + '</td>' +
+    '<td class="td">' + (g.ref ? '<button type="button" class="btn mono rounded-[4px] border border-[#ff8a80]/50 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ff8a80] hover:bg-[#ff8a80] hover:text-black" data-del="1" data-ref="' + esc(g.ref) + '" data-n="' + g.n + '">Delete</button>' : '') + '</td></tr>'
+  ).join('') : '<tr><td class="td text-mute" colspan="7">No visits yet.</td></tr>';
 }
+
+// Visits are test-data friendly: this really deletes every event for the ref (needs the delete policy in supabase/admin.sql).
+$('visitsBody').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-del]');
+  if (!b) return;
+  const ref = b.dataset.ref;
+  if (!confirm('Delete all ' + b.dataset.n + ' visit events for "' + ref + '"?\n\nThis permanently deletes them and cannot be undone.')) return;
+  b.disabled = true;
+  showErr('visitsErr', '');
+  const { error, count } = await sb.from('visits').delete({ count: 'exact' }).eq('ref', ref);
+  if (error || !count) {
+    b.disabled = false;
+    showErr('visitsErr', 'Nothing was deleted' + (error ? ': ' + error.message : '.') + ' Has section 4 of supabase/admin.sql been run?');
+    return;
+  }
+  await loadVisits();
+  await buildTimeline();
+});
 
 /* ---------- outreach timeline ---------- */
 
@@ -234,8 +268,8 @@ const fmtGap = (ms) => {
 };
 
 async function loadOutreach() {
-  try { outreachRows = await fetchAll('outreach', 'message_id,thread_id,ref,to_email,subject,sent_at,replied,replied_at', 'sent_at'); }
-  catch (e) { showErr('timelineErr', 'Could not load outreach: ' + e.message); }
+  try { outreachRows = await fetchAll('outreach', 'message_id,thread_id,ref,to_email,subject,sent_at,replied,replied_at,hidden', 'sent_at'); }
+  catch (e) { showErr('timelineErr', 'Could not load outreach: ' + e.message + (/hidden/.test(e.message) ? HIDDEN_HINT : '')); }
 }
 
 // One row per ref, joining outreach (sent/replied), visits (events after the first email) and prospects (name).
@@ -256,13 +290,14 @@ function computeTimeline() {
     const pr = prospects.find((x) => norm(x.ref) === ref);
     return {
       ref: ref, business: pr ? pr.business : '', to: ms[0].to_email, mails: ms.length,
+      ids: ms.map((m) => m.message_id), hidden: ms.every((m) => m.hidden),
       sent: sent, first: first, last: last,
       clicked: after.some((e) => e.type === 'cta'),
       replied: replied, repliedAt: repTimes.length ? Math.min.apply(null, repTimes) : null,
       followUp: first !== null && !replied && now - first >= FOLLOW_UP_DAYS * 864e5,
       status: replied ? 'replied' : first !== null ? 'viewed' : 'emailed'
     };
-  }).sort((a, b) => (b.followUp - a.followUp) || (Math.max(b.sent, b.last || 0, b.repliedAt || 0) - Math.max(a.sent, a.last || 0, a.repliedAt || 0)));
+  }).sort((a, b) => (a.hidden - b.hidden) || (b.followUp - a.followUp) || (Math.max(b.sent, b.last || 0, b.repliedAt || 0) - Math.max(a.sent, a.last || 0, a.repliedAt || 0)));
 }
 
 const RANK = { new: 0, emailed: 1, viewed: 2, replied: 3 };
@@ -272,7 +307,7 @@ async function syncStatuses(rows) {
   if (!prospectsOk) return;
   for (const r of rows) {
     for (const p of prospects) {
-      if (norm(p.ref) !== r.ref || RANK[p.status] === undefined || RANK[p.status] >= RANK[r.status]) continue;
+      if (p.hidden || norm(p.ref) !== r.ref || RANK[p.status] === undefined || RANK[p.status] >= RANK[r.status]) continue;
       const { error } = await sb.from('prospects').update({ status: r.status }).eq('id', p.id);
       if (error) { showErr('timelineErr', 'Could not update status for ' + p.business + ': ' + error.message + ' (has supabase/admin.sql been run?)'); return; }
       p.status = r.status;
@@ -283,25 +318,52 @@ async function syncStatuses(rows) {
 }
 
 async function buildTimeline() {
-  if (!visitRows || !outreachRows) { $('timelineBody').innerHTML = '<tr><td class="td text-mute" colspan="7">Timeline unavailable.</td></tr>'; return; }
-  const rows = computeTimeline();
-  const n = rows.filter((r) => r.followUp).length;
-  $('timelineMeta').textContent = rows.length + ' refs emailed, ' + n + ' to follow up. Follow up = visited, no reply, ' + FOLLOW_UP_DAYS + '+ days since first visit.';
+  timelineRows = visitRows && outreachRows ? computeTimeline() : [];
+  renderTimeline();
+  await syncStatuses(timelineRows.filter((r) => !r.hidden));
+}
+
+function renderTimeline() {
+  updateHiddenToggle();
+  if (!visitRows || !outreachRows) { $('timelineBody').innerHTML = '<tr><td class="td text-mute" colspan="8">Timeline unavailable.</td></tr>'; return; }
+  const rows = timelineRows.filter((r) => showHidden || !r.hidden);
+  const n = rows.filter((r) => r.followUp && !r.hidden).length;
+  $('timelineMeta').textContent = rows.filter((r) => !r.hidden).length + ' refs emailed, ' + n + ' to follow up. Follow up = visited, no reply, ' + FOLLOW_UP_DAYS + '+ days since first visit.';
   const dash = '<span class="text-dim">-</span>';
   const when = (t) => '<td class="td mono text-[14px]">' + esc(fmtDate(new Date(t).toISOString())) + '</td>';
   $('timelineBody').innerHTML = rows.length ? rows.map((r) =>
-    '<tr class="border-t border-white/10">' +
+    '<tr class="border-t border-white/10' + (r.hidden ? ' opacity-50' : '') + '">' +
     '<td class="td"><span class="mono font-bold text-hi">' + esc(r.ref) + '</span><br><span class="text-[14px] text-mute">' + esc(r.business || r.to || '') + '</span></td>' +
     when(r.sent).replace('</td>', (r.mails > 1 ? ' <span class="text-mute">x' + r.mails + '</span>' : '') + '</td>') +
     (r.first !== null ? when(r.first).replace('</td>', ' <span class="text-mute">+' + fmtGap(r.first - r.sent) + '</span></td>') : '<td class="td">' + dash + '</td>') +
     (r.last !== null ? when(r.last) : '<td class="td">' + dash + '</td>') +
     '<td class="td">' + (r.clicked ? '<span class="font-bold text-hi">Clicked</span>' : dash) + '</td>' +
     '<td class="td">' + (r.replied ? '<span class="font-bold text-hi">Replied</span>' + (r.repliedAt ? ' <span class="mono text-[14px] text-mute">' + esc(fmtDate(new Date(r.repliedAt).toISOString())) + '</span>' : '') : dash) + '</td>' +
-    '<td class="td">' + (r.followUp ? '<span class="mono rounded-[4px] bg-hi px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-black">Follow up</span>'
-      : '<span class="mono text-[12px] uppercase tracking-[0.1em] text-mute">' + (r.replied ? 'Replied' : r.first !== null ? 'Waiting' : 'No visit yet') + '</span>') + '</td></tr>'
-  ).join('') : '<tr><td class="td text-mute" colspan="7">No outreach yet.</td></tr>';
-  await syncStatuses(rows);
+    '<td class="td">' + (r.hidden ? '<span class="mono text-[12px] uppercase tracking-[0.1em] text-mute">Hidden</span>'
+      : r.followUp ? '<span class="mono rounded-[4px] bg-hi px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-black">Follow up</span>'
+      : '<span class="mono text-[12px] uppercase tracking-[0.1em] text-mute">' + (r.replied ? 'Replied' : r.first !== null ? 'Waiting' : 'No visit yet') + '</span>') + '</td>' +
+    '<td class="td"><button type="button" class="btn mono rounded-[4px] border border-white/25 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-white hover:text-black" data-hide="' + (r.hidden ? '0' : '1') + '" data-ref="' + esc(r.ref) + '">' + (r.hidden ? 'Unhide' : 'Hide') + '</button></td></tr>'
+  ).join('') : '<tr><td class="td text-mute" colspan="8">' + (timelineRows.length ? 'All refs are hidden.' : 'No outreach yet.') + '</td></tr>';
 }
+
+// Outreach is never deleted (the Gmail sync would re-add it): hiding sets hidden on every email for the ref.
+$('timelineBody').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-hide]');
+  if (!b) return;
+  const r = timelineRows.find((x) => x.ref === b.dataset.ref);
+  const val = b.dataset.hide === '1';
+  b.disabled = true;
+  const { data, error } = await sb.from('outreach').update({ hidden: val }).in('message_id', r.ids).select('message_id');
+  if (error || !data.length) {
+    b.disabled = false;
+    showErr('timelineErr', 'Could not ' + (val ? 'hide ' : 'unhide ') + r.ref + ': ' + (error ? error.message : 'no rows updated') + HIDDEN_HINT);
+    return;
+  }
+  showErr('timelineErr', '');
+  outreachRows.forEach((o) => { if (r.ids.indexOf(o.message_id) !== -1) o.hidden = val; });
+  timelineRows = computeTimeline();
+  renderTimeline();
+});
 
 /* ---------- prospects ---------- */
 
@@ -319,17 +381,20 @@ function gmailLink(p) {
 
 function rowHtml(p) {
   const inp = (f, type) => '<td class="td"><input class="cell" type="' + (type || 'text') + '" data-f="' + f + '" value="' + esc(p[f]) + '"></td>';
-  return '<tr class="border-t border-black/10" data-id="' + esc(p.id) + '">' +
+  return '<tr class="border-t border-black/10' + (p.hidden ? ' opacity-50' : '') + '" data-id="' + esc(p.id) + '">' +
     inp('business') + inp('contact_name') + inp('email', 'email') + inp('trade') +
     '<td class="td"><select class="cell" data-f="status">' + STATUSES.map((s) => '<option' + (s === p.status ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></td>' +
     inp('ref') + inp('last_contacted', 'date') + inp('notes') +
-    '<td class="td"><a class="btn mono inline-block whitespace-nowrap rounded-[4px] bg-black px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-hi hover:text-black" ' +
-    'href="' + esc(gmailLink(p)) + '" target="_blank" rel="noopener" data-compose>Compose in Gmail</a></td></tr>';
+    '<td class="td"><div class="flex gap-2"><a class="btn mono inline-block whitespace-nowrap rounded-[4px] bg-black px-3 py-2 text-[11px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-hi hover:text-black" ' +
+    'href="' + esc(gmailLink(p)) + '" target="_blank" rel="noopener" data-compose>Compose in Gmail</a>' +
+    '<button type="button" class="btn mono rounded-[4px] border border-black/40 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-black hover:text-hi" data-hide="' + (p.hidden ? '0' : '1') + '">' + (p.hidden ? 'Unhide' : 'Hide') + '</button></div></td></tr>';
 }
 
 function renderProspects() {
-  $('prospectsBody').innerHTML = prospects.length ? prospects.map(rowHtml).join('')
-    : '<tr><td class="td text-dim" colspan="9">No prospects yet. Click Add prospect.</td></tr>';
+  updateHiddenToggle();
+  const list = prospects.filter((p) => showHidden || !p.hidden);
+  $('prospectsBody').innerHTML = list.length ? list.map(rowHtml).join('')
+    : '<tr><td class="td text-dim" colspan="9">' + (prospects.length ? 'All prospects are hidden.' : 'No prospects yet. Click Add prospect.') + '</td></tr>';
 }
 
 async function loadProspects() {
@@ -362,6 +427,22 @@ $('prospectsBody').addEventListener('change', async (e) => {
 
 // Opening Gmail counts as contact: mark emailed and stamp the date if still new.
 $('prospectsBody').addEventListener('click', async (e) => {
+  const h = e.target.closest('[data-hide]');
+  if (h) {
+    const hp = prospects.find((x) => x.id === h.closest('tr').dataset.id);
+    const val = h.dataset.hide === '1';
+    h.disabled = true;
+    const { data, error } = await sb.from('prospects').update({ hidden: val }).eq('id', hp.id).select('id');
+    if (error || !data.length) {
+      h.disabled = false;
+      showErr('prospectsErr', 'Could not ' + (val ? 'hide ' : 'unhide ') + hp.business + ': ' + (error ? error.message : 'no rows updated') + HIDDEN_HINT);
+      return;
+    }
+    showErr('prospectsErr', '');
+    hp.hidden = val;
+    renderProspects();
+    return;
+  }
   const a = e.target.closest('[data-compose]');
   if (!a) return;
   const tr = a.closest('tr');
