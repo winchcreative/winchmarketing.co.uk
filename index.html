@@ -431,16 +431,30 @@ function Proof() {
 /* ---------- about (dark band) ---------- */
 
 function About() {
+  const [photoFailed, setPhotoFailed] = useState(false);
   return (
     <section id="about" className="bg-ink">
-      <div className="gutter mx-auto max-w-[1280px] py-16 md:py-28">
+      <div className={'gutter mx-auto max-w-[1280px] py-16 md:py-28' + (photoFailed ? '' : ' grid items-center gap-10 lg:grid-cols-[3fr_2fr] lg:gap-16')}>
         <Reveal className="flex flex-col gap-6">
           <Label>About</Label>
-          <h2 className="font-hd text-[clamp(34px,7.5vw,84px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]">
+          <h2 className={'font-hd font-bold uppercase leading-[0.98] tracking-[-0.01em] ' + (photoFailed ? 'text-[clamp(34px,7.5vw,84px)]' : 'text-[clamp(34px,7.5vw,84px)] lg:text-[clamp(40px,4.6vw,68px)]')}>
             Hi, I'm Alex.<br /><span className="text-dim">You get me, not a junior.</span>
           </h2>
           <p className="max-w-[480px] text-[19px] text-mute">I work alongside sales reps every day at a home-visit flooring company. The person on the call is the person doing the work.</p>
         </Reveal>
+        {!photoFailed && (
+          <Reveal delay={120} className="order-first lg:order-none">
+            <img
+              src="profilepic-optimised.jpg"
+              alt="Alex, founder of Winch Marketing"
+              width="1024"
+              height="1024"
+              loading="lazy"
+              onError={() => setPhotoFailed(true)}
+              className="block aspect-square max-h-[420px] w-full rounded-[4px] object-cover object-top lg:max-h-none"
+            />
+          </Reveal>
+        )}
       </div>
     </section>
   );
