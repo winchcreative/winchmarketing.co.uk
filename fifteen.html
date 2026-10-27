@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How long is 15 minutes, really? | Winch Marketing</title>
+<meta name="description" content="15 minutes. Less than you think. Drag the slider and see what fits.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { ink: '#0A0A0A', paper: '#F4F4F2', hi: '#F5C230', dim: '#7C7C82', dimlt: '#A9A9AE', mute: '#A1A1AA' },
+      fontFamily: {
+        hd: ['Atkinson Hyperlegible', 'system-ui', 'sans-serif'],
+        body: ['Atkinson Hyperlegible', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'Consolas', 'monospace']
+      }
+    }
+  }
+};
+</script>
+<style>
+:root{color-scheme:dark}
+html{scroll-behavior:smooth}
+body{background:#0A0A0A;color:#FFFFFF;font-family:'Atkinson Hyperlegible',system-ui,sans-serif;font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0}
+h1,h2,h3,p,ul{margin:0}
+ul{padding:0;list-style:none}
+.gutter{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.btn{transition:background-color .15s ease,color .15s ease,transform .15s ease}
+.btn:hover{transform:translateY(-2px)}
+a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3px}
+.on-hi a:focus-visible{outline-color:#0A0A0A}
+.tab{font-variant-numeric:tabular-nums}
+
+/* ---- chunky slider ---- */
+#mins{--p:.2373;-webkit-appearance:none;appearance:none;display:block;width:100%;height:56px;margin:0;background:transparent;cursor:pointer;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+#mins::-webkit-slider-runnable-track{height:20px;border-radius:4px;background:linear-gradient(to right,#F5C230 0,#F5C230 calc(28px + (100% - 56px) * var(--p)),#2A2A2E calc(28px + (100% - 56px) * var(--p)),#2A2A2E 100%)}
+#mins::-moz-range-track{height:20px;border-radius:4px;background:linear-gradient(to right,#F5C230 0,#F5C230 calc(28px + (100% - 56px) * var(--p)),#2A2A2E calc(28px + (100% - 56px) * var(--p)),#2A2A2E 100%)}
+#mins::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:56px;height:56px;margin-top:-18px;border:4px solid #F5C230;border-radius:4px;
+  background:linear-gradient(#F5C230,#F5C230) calc(50% - 7px) 50%/4px 22px no-repeat,linear-gradient(#F5C230,#F5C230) calc(50% + 7px) 50%/4px 22px no-repeat,#0A0A0A}
+#mins::-moz-range-thumb{box-sizing:border-box;width:56px;height:56px;border:4px solid #F5C230;border-radius:4px;
+  background:linear-gradient(#F5C230,#F5C230) calc(50% - 7px) 50%/4px 22px no-repeat,linear-gradient(#F5C230,#F5C230) calc(50% + 7px) 50%/4px 22px no-repeat,#0A0A0A}
+#mins:focus{outline:none}
+#mins:focus-visible::-webkit-slider-thumb{outline:3px solid #fff;outline-offset:3px}
+#mins:focus-visible::-moz-range-thumb{outline:3px solid #fff;outline-offset:3px}
+
+/* ---- cards + the Macarena easter egg ---- */
+.card{border:3px solid transparent;transition:border-color .2s ease}
+.card.at15{border-color:#F5C230}
+.emo{display:inline-block;transform-origin:50% 90%}
+.dance{animation:hop 1.5s ease-in-out}
+.dance .emo{animation:wiggle 1.5s ease-in-out}
+@keyframes wiggle{
+  0%,100%{transform:rotate(0) translateX(0) scale(1)}
+  10%{transform:rotate(-18deg) translateX(-6px) scale(1.2)}
+  20%{transform:rotate(18deg) translateX(6px) scale(1.2)}
+  30%{transform:rotate(-18deg) translateX(-6px) scale(1.2)}
+  40%{transform:rotate(18deg) translateX(6px) scale(1.2)}
+  50%{transform:rotate(-12deg) translateX(-4px) scale(1.1)}
+  60%{transform:rotate(12deg) translateX(4px) scale(1.1)}
+  75%{transform:rotate(-8deg) scale(1.05)}
+  90%{transform:rotate(8deg) scale(1.02)}
+}
+@keyframes hop{0%,100%{transform:translateY(0)}15%{transform:translateY(-8px)}30%{transform:translateY(0)}45%{transform:translateY(-6px)}60%{transform:translateY(0)}}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .btn,.card{transition:none}
+  .btn:hover{transform:none}
+  .dance,.dance .emo{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="border-b border-white/10 bg-ink">
+  <div class="gutter mx-auto max-w-[1280px] py-4">
+    <a id="back" href="index.html" class="font-mono text-[12px] uppercase tracking-[0.14em] text-mute hover:text-hi">&larr; Back to Winch</a>
+  </div>
+</header>
+
+<main>
+  <!-- hero + slider (dark band) -->
+  <section class="bg-ink">
+    <div class="gutter mx-auto max-w-[1280px] py-12 md:py-20">
+      <p class="font-mono text-[12px] uppercase tracking-[0.14em] text-hi">{Fifteen}</p>
+      <h1 class="mt-5 font-hd text-[clamp(44px,11vw,128px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">
+        15 minutes.<br><span class="text-dim">Less than you think.</span>
+      </h1>
+
+      <div class="mt-12 md:mt-16">
+        <div class="flex items-baseline gap-3">
+          <output id="val" for="mins" class="tab font-mono text-[clamp(110px,34vw,260px)] font-bold leading-[0.9] text-hi">15</output>
+          <span class="font-mono text-[clamp(16px,3vw,28px)] font-bold uppercase tracking-[0.1em] text-mute">min</span>
+        </div>
+        <div class="mt-6">
+          <input id="mins" type="range" min="1" max="60" step="1" value="15" aria-label="Minutes" aria-valuetext="15 minutes">
+          <div class="relative mt-1 h-11 font-mono text-[12px] font-bold uppercase tracking-[0.1em] text-mute" role="group" aria-label="Jump to a time">
+            <button type="button" data-v="1" class="absolute top-0 h-11 -translate-x-1/2 px-3 hover:text-hi" style="left:28px">1</button>
+            <button type="button" data-v="15" class="absolute top-0 h-11 -translate-x-1/2 px-3 hover:text-hi" style="left:calc(28px + (100% - 56px) * 0.2373)">15</button>
+            <button type="button" data-v="30" class="absolute top-0 h-11 -translate-x-1/2 px-3 hover:text-hi" style="left:calc(28px + (100% - 56px) * 0.4915)">30</button>
+            <button type="button" data-v="45" class="absolute top-0 h-11 -translate-x-1/2 px-3 hover:text-hi" style="left:calc(28px + (100% - 56px) * 0.7458)">45</button>
+            <button type="button" data-v="60" class="absolute top-0 h-11 -translate-x-1/2 px-3 hover:text-hi" style="left:calc(100% - 28px)">60</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- what fits (light band) -->
+  <section class="bg-paper text-black">
+    <div class="gutter mx-auto max-w-[1280px] py-16 md:py-24">
+      <p class="font-mono text-[12px] uppercase tracking-[0.14em] text-black/60">{The maths}</p>
+      <h2 class="mt-5 font-hd text-[clamp(34px,7.5vw,84px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]">
+        In <span id="n2" class="tab">15</span> <span id="n2u">minutes</span>,<br><span class="text-dim">that's about&hellip;</span>
+      </h2>
+
+      <ul id="cards" class="mt-10 grid grid-cols-2 gap-3 md:mt-14 md:grid-cols-3 md:gap-4 lg:grid-cols-5">
+        <li id="card-mac" class="card flex flex-col gap-2 rounded-[4px] bg-ink p-4 text-white md:p-6">
+          <span class="emo text-[34px] leading-none" aria-hidden="true">💃</span>
+          <span data-num class="tab mt-2 font-mono text-[44px] font-bold leading-none text-hi md:text-[56px]">3.9</span>
+          <span data-line class="text-[17px] font-bold leading-tight">Macarenas</span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-mute">3 min 50 sec each</span>
+        </li>
+        <li class="card flex flex-col gap-2 rounded-[4px] bg-ink p-4 text-white md:p-6">
+          <span class="text-[34px] leading-none" aria-hidden="true">📺</span>
+          <span data-num class="tab mt-2 font-mono text-[44px] font-bold leading-none text-hi md:text-[56px]">0.5</span>
+          <span data-line class="text-[17px] font-bold leading-tight">episodes of EastEnders</span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-mute">30 min each</span>
+        </li>
+        <li class="card flex flex-col gap-2 rounded-[4px] bg-ink p-4 text-white md:p-6">
+          <span class="text-[34px] leading-none" aria-hidden="true">🫖</span>
+          <span data-num class="tab mt-2 font-mono text-[44px] font-bold leading-none text-hi md:text-[56px]">3.8</span>
+          <span data-line class="text-[17px] font-bold leading-tight">cups of tea</span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-mute">Kettle to drinkable, 4 min</span>
+        </li>
+        <li class="card flex flex-col gap-2 rounded-[4px] bg-ink p-4 text-white md:p-6">
+          <span class="text-[34px] leading-none" aria-hidden="true">🚽</span>
+          <span data-num class="tab mt-2 font-mono text-[44px] font-bold leading-none text-hi md:text-[56px]">3</span>
+          <span data-line class="text-[17px] font-bold leading-tight">toilet breaks (no judgement)</span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-mute">5 min each</span>
+        </li>
+        <li class="card col-span-2 flex flex-col gap-2 rounded-[4px] bg-ink p-4 text-white md:col-span-1 md:p-6">
+          <span class="text-[34px] leading-none" aria-hidden="true">🚪</span>
+          <span data-num class="tab mt-2 font-mono text-[44px] font-bold leading-none text-hi md:text-[56px]">0.1</span>
+          <span data-line class="text-[17px] font-bold leading-tight">of a door</span>
+          <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-mute">Fitted by a good fitter, 2 hours</span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- the ask (yellow band) -->
+  <section class="on-hi bg-hi text-black">
+    <div class="gutter mx-auto flex max-w-[1280px] flex-col gap-10 py-16 md:flex-row md:items-end md:justify-between md:py-24">
+      <div class="flex flex-col gap-5">
+        <p class="font-mono text-[12px] uppercase tracking-[0.14em] text-black/60">{Book}</p>
+        <h2 class="font-hd text-[clamp(40px,8.4vw,104px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br>That's all I'm asking.</h2>
+      </div>
+      <a id="cta" href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" class="btn w-full whitespace-nowrap rounded-[4px] bg-black px-10 py-6 text-center font-mono text-[18px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black md:w-auto md:shrink-0 md:text-[20px]">Book a call</a>
+    </div>
+  </section>
+</main>
+
+<footer class="bg-ink">
+  <div class="gutter mx-auto flex max-w-[1280px] flex-col gap-2 py-8 md:flex-row md:items-center md:justify-between">
+    <a id="back2" href="index.html" class="font-mono text-[12px] uppercase tracking-[0.14em] text-mute hover:text-hi">&larr; Back to Winch</a>
+    <p class="font-mono text-[11px] text-mute">© Winch Marketing. Anonymous visit tracking, no cookies.</p>
+  </div>
+</footer>
+
+<script>
+/* ---------- visit tracking (insert-only, no IPs, no cookies) ---------- */
+
+const SB_URL = 'https://esnopodsswwtsbavjwen.supabase.co';
+const SB_KEY = 'sb_publishable_IA0R66sBAt21zEDL0Vw7dQ_ybJNJDhF';
+const REF = (() => {
+  try { return (new URLSearchParams(location.search).get('r') || 'direct').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'direct'; }
+  catch (e) { return 'direct'; }
+})();
+const SESSION = (() => {
+  try {
+    let id = sessionStorage.getItem('wm_s');
+    if (!id) { id = Math.random().toString(36).slice(2, 10); sessionStorage.setItem('wm_s', id); }
+    return id;
+  } catch (e) { return Math.random().toString(36).slice(2, 10); }
+})();
+const sent = {};
+function track(type, detail) {
+  const key = type + (detail || '');
+  if (sent[key] || SB_URL.indexOf('__') === 0) return;
+  sent[key] = true;
+  try {
+    fetch(SB_URL + '/rest/v1/visits', {
+      method: 'POST',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Prefer: 'return=minimal' },
+      body: JSON.stringify({ ref: REF, session: SESSION, type: type, detail: detail || null, path: location.pathname, device: window.innerWidth < 768 ? 'mobile' : 'desktop' })
+    }).catch(() => {});
+  } catch (e) {}
+}
+
+(function () {
+  let human = false;
+  const markHuman = () => { if (!human && document.visibilityState === 'visible') { human = true; track('view'); } };
+  setTimeout(markHuman, 5000);
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    if (h <= 0) return;
+    const p = window.scrollY / h;
+    if (window.scrollY > 40) markHuman();
+    if (p > 0.5) track('scroll', '50');
+    if (p > 0.9) track('scroll', '90');
+  }, { passive: true });
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="https://calendar.app.google"]');
+    if (a) track('cta', (a.textContent || '').trim().slice(0, 30));
+  });
+})();
+
+/* ---------- keep ?r= when going back to the main site ---------- */
+
+(function () {
+  if (REF === 'direct') return;
+  document.querySelectorAll('#back, #back2').forEach((a) => { a.href = 'index.html?r=' + encodeURIComponent(REF); });
+})();
+
+/* ---------- the slider ---------- */
+
+const $ = (id) => document.getElementById(id);
+const reduced = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+
+// minutes each thing takes
+const THINGS = [
+  { per: 230 / 60, one: 'Macarena', many: 'Macarenas' },
+  { per: 30, one: 'episode of EastEnders', many: 'episodes of EastEnders' },
+  { per: 4, one: 'cup of tea', many: 'cups of tea' },
+  { per: 5, one: 'toilet break (no judgement)', many: 'toilet breaks (no judgement)' },
+  { per: 120, one: 'of a door', many: 'of a door' }
+];
+const items = Array.prototype.slice.call(document.querySelectorAll('#cards > li'));
+const cards = items.map((li, i) => ({
+  li: li, num: li.querySelector('[data-num]'), line: li.querySelector('[data-line]'),
+  per: THINGS[i].per, one: THINGS[i].one, many: THINGS[i].many, cur: 0, target: 0
+}));
+
+// 1 decimal, no trailing .0, and 2 decimals when 1 would round to nothing
+function fmt(v) {
+  const r = Math.round(v * 10) / 10;
+  if (r === 0) return v === 0 ? '0' : (Math.round(v * 100) / 100).toFixed(2);
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+}
+
+let raf = 0, armed = false; // armed once the cards are on screen (or motion is reduced)
+function frame() {
+  let moving = false;
+  cards.forEach((c) => {
+    const d = c.target - c.cur;
+    if (Math.abs(d) < 0.005) c.cur = c.target; else { c.cur += d * 0.22; moving = true; }
+    c.num.textContent = fmt(c.cur);
+  });
+  raf = moving ? requestAnimationFrame(frame) : 0;
+}
+function setTargets(m) {
+  cards.forEach((c) => {
+    c.target = m / c.per;
+    c.line.textContent = fmt(c.target) === '1' ? c.one : c.many;
+  });
+  if (reduced()) { cards.forEach((c) => { c.cur = c.target; c.num.textContent = fmt(c.cur); }); return; }
+  if (armed && !raf) raf = requestAnimationFrame(frame);
+}
+
+// Macarena easter egg: a little dance when the slider lands on exactly 15
+const mac = $('card-mac'), emo = mac.querySelector('.emo');
+let danceTimers = [];
+function dance() {
+  danceTimers.forEach(clearTimeout); danceTimers = [];
+  mac.classList.remove('dance'); emo.textContent = '💃';
+  if (reduced()) return;
+  void mac.offsetWidth; // restart the animation
+  mac.classList.add('dance');
+  ['🕺', '💃', '🕺', '💃'].forEach((e, i) => danceTimers.push(setTimeout(() => { emo.textContent = e; }, 300 * (i + 1))));
+  danceTimers.push(setTimeout(() => { mac.classList.remove('dance'); emo.textContent = '💃'; }, 1500));
+}
+
+const slider = $('mins');
+let prev = 15;
+function update(fromUser) {
+  const m = +slider.value;
+  $('val').textContent = m;
+  $('n2').textContent = m;
+  $('n2u').textContent = m === 1 ? 'minute' : 'minutes';
+  slider.style.setProperty('--p', ((m - 1) / 59).toFixed(4));
+  slider.setAttribute('aria-valuetext', m + (m === 1 ? ' minute' : ' minutes'));
+  mac.classList.toggle('at15', m === 15);
+  setTargets(m);
+  if (m === 15 && prev !== 15 && fromUser) dance();
+  prev = m;
+}
+slider.addEventListener('input', () => update(true));
+document.querySelectorAll('[data-v]').forEach((b) => b.addEventListener('click', () => { slider.value = b.dataset.v; update(true); }));
+
+// start the numbers at 0 and count up the first time the cards scroll into view
+update(false);
+cards.forEach((c) => { c.cur = 0; c.num.textContent = '0'; });
+function startCountUp() { armed = true; if (!raf) raf = requestAnimationFrame(frame); }
+if (reduced() || !('IntersectionObserver' in window)) {
+  armed = true;
+  cards.forEach((c) => { c.cur = c.target; c.num.textContent = fmt(c.cur); });
+} else {
+  const io = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) { io.disconnect(); startCountUp(); }
+  }, { threshold: 0.3 });
+  io.observe($('cards'));
+}
+</script>
+</body>
+</html>

@@ -552,7 +552,10 @@ function Contact() {
           <h2 className="font-hd text-[clamp(44px,10vw,120px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br />Straight answers.</h2>
         </Reveal>
         <Reveal delay={120} className="flex flex-col items-start gap-4">
-          <a href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" className="btn rounded-[4px] bg-black px-8 py-4 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black">Book a 15-minute call</a>
+          <div className="flex flex-col items-start gap-3">
+            <a href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" className="btn rounded-[4px] bg-black px-8 py-4 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black">Book a 15-minute call</a>
+            <a href={REF === 'direct' ? 'fifteen.html' : 'fifteen.html?r=' + encodeURIComponent(REF)} className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-black underline decoration-black/40 underline-offset-4 hover:decoration-black focus-visible:outline-black">How long is 15 minutes, really? →</a>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="break-all font-mono text-[14px] font-medium">{email}</span>
             <button type="button" onClick={copy} className="rounded-[4px] border border-black px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-black hover:text-hi">{copied ? 'Copied' : 'Copy'}</button>
