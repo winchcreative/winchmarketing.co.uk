@@ -40,7 +40,10 @@ section[id]{scroll-margin-top:76px}
 .mq:hover{animation-play-state:paused}
 @keyframes mq{to{transform:translateX(-50%)}}
 a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3px}
+@keyframes bnin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.bn-in{animation:bnin .45s ease both}
 @media (prefers-reduced-motion:reduce){
+  .bn-in{animation:none}
   html{scroll-behavior:auto}
   .rv{opacity:1;transform:none;transition:none}
   .mq{animation:none}
@@ -93,6 +96,17 @@ const REF = (() => {
   try { return (new URLSearchParams(location.search).get('r') || 'direct').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40) || 'direct'; }
   catch (e) { return 'direct'; }
 })();
+// Optional display name for outreach links (?n=Vision+PVC). Letters, numbers, spaces and & ' . - only, max 40.
+// Used as plain text only, and never sent to Supabase.
+const NAME = (() => {
+  try {
+    const raw = new URLSearchParams(location.search).get('n');
+    if (raw == null) return '';
+    let bad;
+    try { bad = new RegExp("[^\\p{L}\\p{N} &'.\\-]", 'gu'); } catch (e) { bad = /[^A-Za-z0-9 &'.\-]/g; }
+    return raw.replace(/\s+/g, ' ').replace(bad, '').replace(/ {2,}/g, ' ').trim().slice(0, 40).trim();
+  } catch (e) { return ''; }
+})();
 const SESSION = (() => {
   try {
     let id = sessionStorage.getItem('wm_s');
@@ -119,7 +133,9 @@ function track(type, detail) {
 
 const WA_NUMBER = '447403205318';
 const WA_URL = (() => {
-  const msg = "Hi Alex, I've just seen your website and fancy a chat." + (REF !== 'direct' ? ' (ref: ' + REF + ')' : '');
+  const msg = NAME
+    ? "Hi Alex, it's " + NAME.replace(/\.+$/, '') + ". I've just seen your website and fancy a chat."
+    : "Hi Alex, I've just seen your website and fancy a chat." + (REF !== 'direct' ? ' (ref: ' + REF + ')' : '');
   const enc = encodeURIComponent(msg).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
   return 'https://wa.me/' + WA_NUMBER + '?text=' + enc;
 })();
@@ -213,6 +229,29 @@ function WhatsAppIcon() {
       <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
       <path d="M9 8.2h2l1 2.4-1.3.9a5 5 0 0 0 2.2 2.2l.9-1.3 2.4 1v2a.8.8 0 0 1-.8.8A7.6 7.6 0 0 1 8.2 9a.8.8 0 0 1 .8-.8z" fill="currentColor" stroke="none" />
     </svg>
+  );
+}
+
+/* ---------- welcome banner (only for ?n= visitors) ---------- */
+
+function Banner() {
+  const [open, setOpen] = useState(() => {
+    try { return sessionStorage.getItem('wm_bn') !== '1'; } catch (e) { return true; }
+  });
+  if (!NAME || !open) return null;
+  const close = () => {
+    setOpen(false);
+    try { sessionStorage.setItem('wm_bn', '1'); } catch (e) {}
+  };
+  return (
+    <aside aria-label="Welcome" className="bn-in bg-hi text-black">
+      <div className="gutter mx-auto flex min-h-[44px] max-w-[1280px] items-center justify-between gap-3 py-2">
+        <p className="min-w-0 break-words font-mono text-[11px] font-medium uppercase leading-snug tracking-[0.14em] md:text-[12px]">
+          Hi {NAME} 👋 Thanks for taking a look. Here's what I do, in 2 minutes.
+        </p>
+        <button type="button" onClick={close} aria-label="Dismiss message" className="-my-2 -mr-3 flex h-11 w-11 shrink-0 items-center justify-center font-mono text-[20px] font-bold leading-none hover:bg-black hover:text-hi focus-visible:outline-black">×</button>
+      </div>
+    </aside>
   );
 }
 
@@ -568,11 +607,15 @@ function Contact() {
   return (
     <section id="contact" className="bg-hi text-black">
       <div className="gutter mx-auto flex max-w-[1280px] flex-col gap-10 py-16 md:flex-row md:items-end md:justify-between md:py-24">
-        <Reveal className="flex flex-col gap-5">
+        <Reveal className={'flex flex-col gap-5' + (NAME ? ' md:min-w-0 md:flex-1' : '')}>
           <Label dark>Contact</Label>
-          <h2 className="font-hd text-[clamp(44px,10vw,120px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br />Straight answers.</h2>
+          {NAME ? (
+            <h2 className="break-words font-hd text-[clamp(34px,7.5vw,96px)] font-bold uppercase leading-[0.96] tracking-[-0.01em]">15 minutes for {NAME}?<br />That's four Macarenas.</h2>
+          ) : (
+            <h2 className="font-hd text-[clamp(44px,10vw,120px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br />Straight answers.</h2>
+          )}
         </Reveal>
-        <Reveal delay={120} className="flex flex-col items-start gap-4">
+        <Reveal delay={120} className={'flex flex-col items-start gap-4' + (NAME ? ' md:shrink-0' : '')}>
           <div className="flex flex-col items-start gap-3">
             <a href="https://calendar.app.google/YAN5EEpMBqcntsB66" target="_blank" rel="noopener" className="btn rounded-[4px] bg-black px-8 py-4 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-white hover:text-black">Book a 15-minute call</a>
             <a href={WA_URL} data-wa="contact" target="_blank" rel="noopener" aria-label="Rather message? WhatsApp me (opens WhatsApp in a new tab)" className="btn rounded-[4px] border-2 border-black px-8 py-[14px] font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black hover:bg-black hover:text-hi focus-visible:outline-black">Rather message? WhatsApp me</a>
@@ -624,6 +667,7 @@ function App() {
   useTracking();
   return (
     <div id="top" className="pb-[calc(56px+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <Banner />
       <Header />
       <main>
         <Hero />
