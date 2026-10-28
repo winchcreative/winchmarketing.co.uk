@@ -77,7 +77,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <table class="w-full border-collapse">
           <thead class="bg-white/5"><tr>
             <th class="th">Ref</th><th class="th">Email sent</th><th class="th">First visit</th><th class="th">Last visit</th>
-            <th class="th">Book a call</th><th class="th">Replied</th><th class="th">Next</th><th class="th"></th>
+            <th class="th">Book a call</th><th class="th">WhatsApp</th><th class="th">Replied</th><th class="th">Next</th><th class="th"></th>
           </tr></thead>
           <tbody id="timelineBody"></tbody>
         </table>
@@ -94,7 +94,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         <table class="w-full border-collapse">
           <thead class="bg-white/5"><tr>
             <th class="th">Ref</th><th class="th">Viewers</th><th class="th">Last seen</th>
-            <th class="th">Scrolled to end</th><th class="th">Clicked Book a call</th><th class="th">Mobile / Desktop</th><th class="th"></th>
+            <th class="th">Scrolled to end</th><th class="th">Clicked Book a call</th><th class="th">WhatsApp taps</th><th class="th">Mobile / Desktop</th><th class="th"></th>
           </tr></thead>
           <tbody id="visitsBody"></tbody>
         </table>
@@ -202,6 +202,13 @@ async function fetchAll(table, cols, order) {
   return rows;
 }
 
+// WhatsApp tap locations (sent as the event detail), always listed in the same order
+const WA_ORDER = ['sticky', 'contact', 'header'];
+const waLocs = (set) => {
+  const l = Array.from(set);
+  return WA_ORDER.filter((x) => l.indexOf(x) !== -1).concat(l.filter((x) => WA_ORDER.indexOf(x) === -1)).join(', ');
+};
+
 const fmtDate = (iso) => {
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -216,12 +223,13 @@ async function loadVisits() {
   visitRows = rows;
   const by = {};
   rows.forEach((r) => {
-    const g = by[r.ref] || (by[r.ref] = { ref: r.ref, last: r.created_at, n: 0, view: new Set(), end: new Set(), cta: new Set(), mobile: new Set(), desktop: new Set() });
+    const g = by[r.ref] || (by[r.ref] = { ref: r.ref, last: r.created_at, n: 0, view: new Set(), end: new Set(), cta: new Set(), wa: new Set(), waLoc: new Set(), mobile: new Set(), desktop: new Set() });
     g.n++;
     if (r.created_at > g.last) g.last = r.created_at;
     if (r.type === 'view') g.view.add(r.session);
     if (r.type === 'scroll' && r.detail === '90') g.end.add(r.session);
     if (r.type === 'cta') g.cta.add(r.session);
+    if (r.type === 'whatsapp') { g.wa.add(r.session); if (r.detail) g.waLoc.add(r.detail); }
     (r.device === 'mobile' ? g.mobile : g.desktop).add(r.session);
   });
   const groups = Object.values(by).sort((a, b) => (a.last < b.last ? 1 : -1));
@@ -234,9 +242,10 @@ async function loadVisits() {
     '<td class="td mono text-[14px]">' + esc(fmtDate(g.last)) + '</td>' +
     '<td class="td">' + g.end.size + '</td>' +
     '<td class="td">' + g.cta.size + '</td>' +
+    '<td class="td">' + g.wa.size + (g.waLoc.size ? ' <span class="mono text-[13px] text-mute">(' + esc(waLocs(g.waLoc)) + ')</span>' : '') + '</td>' +
     '<td class="td mono text-[14px]">' + g.mobile.size + ' / ' + g.desktop.size + '</td>' +
     '<td class="td">' + (g.ref ? '<button type="button" class="btn mono rounded-[4px] border border-[#ff8a80]/50 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ff8a80] hover:bg-[#ff8a80] hover:text-black" data-del="1" data-ref="' + esc(g.ref) + '" data-n="' + g.n + '">Delete</button>' : '') + '</td></tr>'
-  ).join('') : '<tr><td class="td text-mute" colspan="7">No visits yet.</td></tr>';
+  ).join('') : '<tr><td class="td text-mute" colspan="8">No visits yet.</td></tr>';
 }
 
 // Visits are test-data friendly: this really deletes every event for the ref (needs the delete policy in supabase/admin.sql).
@@ -275,13 +284,16 @@ async function loadOutreach() {
 // One row per ref, joining outreach (sent/replied), visits (events after the first email) and prospects (name).
 function computeTimeline() {
   const events = {}, mails = {};
-  visitRows.forEach((v) => { const k = norm(v.ref); (events[k] = events[k] || []).push({ t: new Date(v.created_at).getTime(), type: v.type }); });
+  visitRows.forEach((v) => { const k = norm(v.ref); (events[k] = events[k] || []).push({ t: new Date(v.created_at).getTime(), type: v.type, detail: v.detail }); });
   outreachRows.forEach((o) => { const k = norm(o.ref); if (k && o.sent_at) (mails[k] = mails[k] || []).push(o); });
   const now = Date.now();
   return Object.keys(mails).map((ref) => {
     const ms = mails[ref];
     const sent = Math.min.apply(null, ms.map((m) => new Date(m.sent_at).getTime()));
+    // Every tracked event after the first email is a visit, so a Book a call click and a WhatsApp tap
+    // both make the ref at least 'viewed' and eligible for the follow-up flag.
     const after = (events[ref] || []).filter((e) => e.t >= sent);
+    const taps = after.filter((e) => e.type === 'whatsapp');
     const first = after.length ? Math.min.apply(null, after.map((e) => e.t)) : null;
     const last = after.length ? Math.max.apply(null, after.map((e) => e.t)) : null;
     const rep = ms.filter((m) => m.replied);
@@ -293,6 +305,7 @@ function computeTimeline() {
       ids: ms.map((m) => m.message_id), hidden: ms.every((m) => m.hidden),
       sent: sent, first: first, last: last,
       clicked: after.some((e) => e.type === 'cta'),
+      tapped: taps.length > 0, tapLocs: waLocs(new Set(taps.map((e) => e.detail).filter(Boolean))),
       replied: replied, repliedAt: repTimes.length ? Math.min.apply(null, repTimes) : null,
       followUp: first !== null && !replied && now - first >= FOLLOW_UP_DAYS * 864e5,
       status: replied ? 'replied' : first !== null ? 'viewed' : 'emailed'
@@ -325,7 +338,7 @@ async function buildTimeline() {
 
 function renderTimeline() {
   updateHiddenToggle();
-  if (!visitRows || !outreachRows) { $('timelineBody').innerHTML = '<tr><td class="td text-mute" colspan="8">Timeline unavailable.</td></tr>'; return; }
+  if (!visitRows || !outreachRows) { $('timelineBody').innerHTML = '<tr><td class="td text-mute" colspan="9">Timeline unavailable.</td></tr>'; return; }
   const rows = timelineRows.filter((r) => showHidden || !r.hidden);
   const n = rows.filter((r) => r.followUp && !r.hidden).length;
   $('timelineMeta').textContent = rows.filter((r) => !r.hidden).length + ' refs emailed, ' + n + ' to follow up. Follow up = visited, no reply, ' + FOLLOW_UP_DAYS + '+ days since first visit.';
@@ -338,12 +351,13 @@ function renderTimeline() {
     (r.first !== null ? when(r.first).replace('</td>', ' <span class="text-mute">+' + fmtGap(r.first - r.sent) + '</span></td>') : '<td class="td">' + dash + '</td>') +
     (r.last !== null ? when(r.last) : '<td class="td">' + dash + '</td>') +
     '<td class="td">' + (r.clicked ? '<span class="font-bold text-hi">Clicked</span>' : dash) + '</td>' +
+    '<td class="td">' + (r.tapped ? '<span class="font-bold text-hi">Tapped WhatsApp</span>' + (r.tapLocs ? ' <span class="mono text-[14px] text-mute">(' + esc(r.tapLocs) + ')</span>' : '') : dash) + '</td>' +
     '<td class="td">' + (r.replied ? '<span class="font-bold text-hi">Replied</span>' + (r.repliedAt ? ' <span class="mono text-[14px] text-mute">' + esc(fmtDate(new Date(r.repliedAt).toISOString())) + '</span>' : '') : dash) + '</td>' +
     '<td class="td">' + (r.hidden ? '<span class="mono text-[12px] uppercase tracking-[0.1em] text-mute">Hidden</span>'
       : r.followUp ? '<span class="mono rounded-[4px] bg-hi px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] text-black">Follow up</span>'
       : '<span class="mono text-[12px] uppercase tracking-[0.1em] text-mute">' + (r.replied ? 'Replied' : r.first !== null ? 'Waiting' : 'No visit yet') + '</span>') + '</td>' +
     '<td class="td"><button type="button" class="btn mono rounded-[4px] border border-white/25 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.1em] hover:bg-white hover:text-black" data-hide="' + (r.hidden ? '0' : '1') + '" data-ref="' + esc(r.ref) + '">' + (r.hidden ? 'Unhide' : 'Hide') + '</button></td></tr>'
-  ).join('') : '<tr><td class="td text-mute" colspan="8">' + (timelineRows.length ? 'All refs are hidden.' : 'No outreach yet.') + '</td></tr>';
+  ).join('') : '<tr><td class="td text-mute" colspan="9">' + (timelineRows.length ? 'All refs are hidden.' : 'No outreach yet.') + '</td></tr>';
 }
 
 // Outreach is never deleted (the Gmail sync would re-add it): hiding sets hidden on every email for the ref.
