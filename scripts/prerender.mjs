@@ -23,7 +23,7 @@ const REACT_VERSION = require('react/package.json').version;
 function serve(dir) {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
-    const file = path.join(dir, decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
+    const file = path.join(dir, decodeURIComponent(url.pathname.endsWith('/') ? url.pathname + 'index.html' : url.pathname));
     if (!file.startsWith(dir)) { res.writeHead(403).end(); return; }
     try {
       const body = await readFile(file);
@@ -58,7 +58,8 @@ export async function prerender(dist, files) {
       });
       const page = await context.newPage();
       page.on('pageerror', (e) => errors.push(e.message));
-      await page.goto(origin + '/' + (file === 'index.html' ? '' : file), { waitUntil: 'load' });
+      // Clean URL, no query string: index.html -> /, folder/index.html -> /folder/
+      await page.goto(origin + '/' + file.replace(/(^|\/)index\.html$/, '$1'), { waitUntil: 'load' });
       // Content is ready once React has rendered the page and the winch loader has finished and been removed.
       await page.waitForFunction(() => !document.getElementById('ld') && document.querySelector('#root main h1'), null, { timeout: 30000 });
       if (errors.length) throw new Error(`${file}: page errors while pre-rendering: ${errors.join(' | ')}`);

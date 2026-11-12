@@ -10,6 +10,7 @@
 //   4. sitemap.xml is generated, and the public files are copied across. Nothing else is published.
 
 import { readFile, writeFile, mkdir, rm, copyFile, readdir } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -26,8 +27,11 @@ const SITE = 'https://winchmarketing.co.uk';
 // Public pages: built, pre-rendered and listed in the sitemap (path on the site -> source file).
 const PAGES = [
   { file: 'index.html', url: SITE + '/' },
-  { file: 'fifteen.html', url: SITE + '/fifteen.html' }
+  { file: 'fifteen.html', url: SITE + '/fifteen.html' },
+  { file: 'marketing-for-window-companies/index.html', url: SITE + '/marketing-for-window-companies/' }
 ];
+// JSX shared by the React pages; loaded with <script type="text/babel" src="/shared.jsx">.
+const SHARED = ['shared.jsx'];
 // Published as-is. admin.html is private (noindex, blocked in robots.txt) and keeps its CDN setup.
 const STATIC = ['admin.html', 'CNAME', 'robots.txt', 'llms.txt'];
 const ASSET_EXT = /\.(jpe?g|png|webp|svg|ico|gif)$/i;
@@ -35,7 +39,8 @@ const ASSET_EXT = /\.(jpe?g|png|webp|svg|ico|gif)$/i;
 const TAILWIND_CDN = /<script src="https:\/\/cdn\.tailwindcss\.com\/[^"]*"><\/script>\s*/;
 const TAILWIND_CONFIG = /<script>\s*tailwind\.config\s*=\s*([\s\S]*?);?\s*<\/script>\s*/;
 const BABEL_CDN = /<script src="[^"]*babel-standalone[^"]*"><\/script>\s*/;
-const BABEL_APP = /<script type="text\/babel"[^>]*>([\s\S]*?)<\/script>/;
+// Every Babel script on a page, in order: <script type="text/babel" src="/shared.jsx"> and inline ones.
+const BABEL_SCRIPT = /<script type="text\/babel"([^>]*)>([\s\S]*?)<\/script>\s*/g;
 
 const hash = (s) => createHash('sha256').update(s).digest('hex').slice(0, 10);
 const one = (re, html, file, what) => {
@@ -58,7 +63,7 @@ async function main() {
   const config = vm.runInNewContext('(' + configLiteral + ')');
   const twConfig = path.join(TMP, 'tailwind.config.cjs');
   await writeFile(twConfig, 'module.exports = ' + JSON.stringify({
-    content: PAGES.map((p) => path.join(ROOT, p.file)),
+    content: PAGES.map((p) => path.join(ROOT, p.file)).concat(SHARED.map((f) => path.join(ROOT, f))),
     theme: config.theme || {}
   }, null, 2) + ';\n');
   await writeFile(path.join(TMP, 'input.css'), '@tailwind base;\n@tailwind components;\n@tailwind utilities;\n');
@@ -74,19 +79,31 @@ async function main() {
   for (const p of PAGES) {
     let html = sources[p.file];
     one(TAILWIND_CDN, html, p.file, 'the Tailwind CDN script');
-    html = html.replace(TAILWIND_CDN, `<link rel="stylesheet" href="${cssName}">\n`).replace(TAILWIND_CONFIG, '');
+    html = html.replace(TAILWIND_CDN, `<link rel="stylesheet" href="/${cssName}">\n`).replace(TAILWIND_CONFIG, '');
 
-    const app = html.match(BABEL_APP);
-    if (app) {
-      const { code } = await esbuild.transform(app[1], { loader: 'jsx', target: 'es2018', minify: true, legalComments: 'none' });
+    // Compile all the page's Babel scripts (shared ones first, as on the page) into one bundle.
+    const scripts = [...html.matchAll(BABEL_SCRIPT)];
+    if (scripts.length) {
+      const parts = [];
+      for (const [, attrs, inline] of scripts) {
+        const src = (attrs.match(/\bsrc="([^"]+)"/) || [])[1];
+        parts.push(src ? await readFile(path.join(ROOT, src.replace(/^\//, '')), 'utf8') : inline);
+      }
+      const { code } = await esbuild.transform(parts.join('\n;\n'), { loader: 'jsx', target: 'es2018', minify: true, legalComments: 'none' });
       const jsName = `assets/app-${hash(code)}.js`;
       await writeFile(path.join(DIST, jsName), code);
-      html = html.replace(BABEL_CDN, '').replace(BABEL_APP, () => `<script src="${jsName}"></script>`);
+      let first = true;
+      html = html.replace(BABEL_CDN, '').replace(BABEL_SCRIPT, () => {
+        if (!first) return '';
+        first = false;
+        return `<script src="/${jsName}"></script>\n`;
+      });
     }
     for (const bad of ['cdn.tailwindcss.com', 'babel-standalone', 'text/babel', 'tailwind.config']) {
       if (html.includes(bad)) throw new Error(`${p.file}: "${bad}" is still in the built page`);
     }
     built[p.file] = html;
+    await mkdir(dirname(path.join(DIST, p.file)), { recursive: true });
     await writeFile(path.join(DIST, p.file), html);
   }
 
