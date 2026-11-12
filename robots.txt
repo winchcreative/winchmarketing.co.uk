@@ -1,0 +1,32 @@
+# Winch Marketing. Everyone is welcome to read the public pages, including AI and search crawlers.
+# The admin page is private.
+
+User-agent: *
+Allow: /
+Disallow: /admin.html
+
+User-agent: GPTBot
+Allow: /
+Disallow: /admin.html
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin.html
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin.html
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin.html
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin.html
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin.html
+
+Sitemap: https://winchmarketing.co.uk/sitemap.xml
