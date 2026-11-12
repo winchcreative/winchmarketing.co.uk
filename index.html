@@ -3,6 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* Winch loader: plays once per browser session. Decided here, before first paint: if it has already played this
+   session (sessionStorage winch_loader_seen) or the visitor prefers reduced motion, <html> gets "ld-skip" and the
+   loader is never shown. If sessionStorage can't be read, it plays as normal. */
+(function(){
+  var skip=false;
+  try{ skip = window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  try{ if(sessionStorage.getItem('winch_loader_seen')==='1') skip=true; }catch(e){}
+  if(skip) document.documentElement.className += ' ld-skip';
+})();
+</script>
 <title>Winch Marketing | Marketing for home improvement firms, Northallerton</title>
 <meta name="description" content="Marketing for home improvement firms in North Yorkshire and Teesside: ads, tracked enquiries, booking forms and follow-up. Run from Northallerton.">
 <link rel="canonical" href="https://winchmarketing.co.uk/">
@@ -143,6 +154,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 
 #ld{position:fixed;inset:0;z-index:100;background:#0A0A0A;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .8s cubic-bezier(.77,0,.18,1),visibility 0s .8s}
 #ld.out{transform:translateY(-100%);visibility:hidden}
+html.ld-skip #ld{display:none!important}
 #ld .ld-stage{position:relative;width:60px;height:min(46vh,360px)}
 #ld .ld-sp{position:absolute;left:0;top:0;width:60px;height:60px;animation:ldspin 1.7s cubic-bezier(.45,0,.25,1) forwards}
 #ld .ld-line{position:absolute;left:56px;top:30px;width:4px;height:0;background:#F5C230;animation:ldrope 1.7s cubic-bezier(.45,0,.25,1) forwards}
@@ -160,10 +172,17 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 <script>
 (function(){
   var d=document.getElementById('ld'),n=document.getElementById('ld-n'),t0=Date.now(),MIN=1700,gone=false;
+  // Already played this session, or reduced motion (see the script in <head>): no loader, no scroll lock.
+  if(/(^| )ld-skip( |$)/.test(document.documentElement.className)){
+    if(d&&d.parentNode)d.parentNode.removeChild(d);
+    window.__ldDone=function(){};
+    return;
+  }
   document.documentElement.style.overflow='hidden';
   var tick=setInterval(function(){var p=Math.min(99,Math.round((Date.now()-t0)/MIN*100));n.textContent=p+'%';},60);
   function hide(){
     if(gone)return;gone=true;clearInterval(tick);n.textContent='100%';
+    try{ sessionStorage.setItem('winch_loader_seen','1'); }catch(e){}
     setTimeout(function(){d.className='out';document.documentElement.style.overflow='';setTimeout(function(){if(d.parentNode)d.parentNode.removeChild(d);},900);},180);
   }
   window.__ldDone=function(){var w=Math.max(0,MIN-(Date.now()-t0));setTimeout(hide,w);};

@@ -94,6 +94,15 @@ for (const [file, html] of [['index.html', index], [WIN, win]]) {
 }
 expect((await read('site.js')).includes('function track('), 'site.js: tracking is missing');
 
+// The loader plays once per session: decided by a script in <head> before any stylesheet, so it never flashes.
+for (const [file, html] of [['index.html', index], [WIN, win]]) {
+  const head = html.slice(0, html.indexOf('</head>'));
+  const decide = head.indexOf("sessionStorage.getItem('winch_loader_seen')");
+  expect(decide > 0 && decide < head.indexOf('<link rel="stylesheet"'), `${file}: loader check is missing from <head> or comes after the stylesheets`);
+  expect(head.includes('html.ld-skip #ld{display:none!important}'), `${file}: no CSS hides the loader for ld-skip`);
+  expect(html.includes("sessionStorage.setItem('winch_loader_seen','1')"), `${file}: the loader never records that it has played`);
+}
+
 const fifteen = await read('fifteen.html');
 for (const s of ['15 minutes.', 'Less than you think.', 'Macarenas', "That's all I'm asking."]) {
   expect(text(fifteen).includes(s), `fifteen.html: "${s}" is not in the served HTML`);
