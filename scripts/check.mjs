@@ -40,6 +40,9 @@ expect(!/\b0?7403\b|447403|205318/.test(body), 'index.html: phone number appears
 const WIN = 'marketing-for-window-companies/index.html';
 const win = await read(WIN);
 const winBody = text(win);
+// Words only, lower case, so a sentence still matches when the page splits it across a title and a body.
+const words = (t) => ' ' + t.toLowerCase().replace(/[\u2018\u2019]/g, "'").replace(/[^a-z0-9£' ]+/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+const winWords = words(winBody);
 for (const s of ['Marketing for window and door companies', "I help owner-run window and door companies turn more surveys into signed orders.", "That's the deal.", 'Winch Marketing']) {
   expect(winBody.includes(s), `${WIN}: "${s}" is not in the served HTML`);
 }
@@ -56,9 +59,21 @@ expect(winFaq.mainEntity.length === 6, `${WIN}: expected 6 questions, found ${wi
 for (const q of winFaq.mainEntity) {
   const id = q['@id'].split('#')[1];
   expect(new RegExp(`<h2[^>]*id="${id}"`).test(win) && win.includes(`href="#${id}"`), `${WIN}: H2 #${id} or its jump link is missing`);
-  expect(winBody.includes(q.name) && winBody.includes(text(q.acceptedAnswer.text).trim()), `${WIN}: "${q.name}" answer is not visible on the page`);
+  // The page lays answers out visually, so check every sentence is visible, word for word and in order.
+  expect(winBody.includes(q.name), `${WIN}: "${q.name}" is not visible on the page`);
+  let from = 0;
+  for (const sentence of text(q.acceptedAnswer.text).match(/[^.?]+[.?]+(?=\s|$)/g) || []) {
+    const at = winWords.indexOf(words(sentence), from);
+    expect(at >= 0, `${WIN}: "${q.name}": "${sentence.trim()}" is not visible on the page (or is out of order)`);
+    if (at >= 0) from = at;
+  }
 }
 expect(!/[\u2013\u2014!]| - /.test(winBody), `${WIN}: dash used as punctuation or an exclamation mark in the copy`);
+for (const s of ["Alex · 15 years in marketing · can't fit a window", 'See the quote demo', 'Try the demo', 'Not for you if', 'For you if',
+  'Before the survey', 'The kitchen table', 'Sell through a survey or showroom', 'County Durham']) {
+  expect(winBody.includes(s), `${WIN}: "${s}" is not in the served HTML`);
+}
+expect(win.includes('src="/proof-quote-demo.jpg"'), `${WIN}: demo screenshot missing`);
 expect(index.includes('href="/marketing-for-window-companies/"'), 'index.html: no link to the window companies page');
 
 // The DC Flooring quote demo: noindex, not in the sitemap, linked from the homepage and the window page,

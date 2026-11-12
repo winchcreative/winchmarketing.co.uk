@@ -266,24 +266,6 @@ function Bars({ title, before, after, max, unit = '', afterLabel }) {
   );
 }
 
-function Phone({ src, name }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <div className="mx-auto w-full max-w-[210px] shrink-0 rounded-[30px] border-[6px] border-[#1c1c1f] bg-black shadow-[0_24px_40px_-24px_rgba(0,0,0,0.55)] md:max-w-[220px] md:rounded-[34px] md:border-[7px]" style={{ aspectRatio: '9 / 18.5' }}>
-      <div className="relative h-full w-full overflow-hidden rounded-[24px] bg-[#141416] md:rounded-[26px]">
-        {failed ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#1b1b1e] to-[#0e0e10] px-4 text-center">
-            <span className="h-8 w-8 border-2 border-hi"></span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">Screenshot<br />{name}</span>
-          </div>
-        ) : (
-          <img src={src} alt={name + ' screenshot'} loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover object-top" />
-        )}
-        <span className="absolute left-1/2 top-2 h-[16px] w-[58px] -translate-x-1/2 rounded-full bg-black" aria-hidden="true"></span>
-      </div>
-    </div>
-  );
-}
 
 const WORK = [
   { n: '02', t: 'Website redesign', d: 'A site built to turn clicks into booked home visits.', src: 'proof-website.jpg' },

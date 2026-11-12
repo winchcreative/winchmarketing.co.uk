@@ -86,7 +86,8 @@
   ]
 }
 </script>
-<!-- The question sections on this page are rendered from this block, so the markup and the visible text never drift apart. -->
+<!-- The question sections on this page are rendered from this block, so the markup and the visible text never drift apart.
+     The page lays each answer out visually (checklists, steps, cards), but every sentence is shown, in order. -->
 <script type="application/ld+json" id="ld-faq">
 {
   "@context": "https://schema.org",
@@ -236,6 +237,9 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 <script type="text/babel" data-presets="react">
 /* ---------- marketing for window and door companies ---------- */
 
+const BOOK_URL = 'https://calendar.app.google/YAN5EEpMBqcntsB66';
+const DEMO_URL = '/work/dc-flooring-quote/';
+
 const JUMPS = [
   ['who-its-for', "Who it's for"],
   ['why-windows-are-different', 'Why windows are different'],
@@ -245,40 +249,124 @@ const JUMPS = [
   ['first-15-minutes', 'The first 15 minutes']
 ];
 
-// The question sections come from the FAQPage JSON-LD in the head; each id comes from the question's @id.
+// Every question and answer comes from the FAQPage JSON-LD in the head, so the schema and the page never drift apart.
+// The sections below lay the same words out visually: every sentence of each answer is on the page, in order.
 const QA = (() => {
   try {
-    return JSON.parse(document.getElementById('ld-faq').textContent).mainEntity.map((x) => ({
-      id: x['@id'].split('#')[1], q: x.name, a: x.acceptedAnswer.text
-    }));
+    const all = {};
+    JSON.parse(document.getElementById('ld-faq').textContent).mainEntity.forEach((x) => {
+      all[x['@id'].split('#')[1]] = { q: x.name, a: x.acceptedAnswer.text };
+    });
+    return all;
+  } catch (e) { return {}; }
+})();
+const qa = (id) => QA[id] || { q: '', a: '' };
+const sentences = (t) => (t.match(/[^.?]+[.?]+(?=\s|$)/g) || []).map((s) => s.trim());
+// "What can you build": the <li> items of the answer, split into the bold title and the rest (which may hold a link).
+const BUILD = (() => {
+  try {
+    const box = document.createElement('div');
+    box.innerHTML = qa('what-i-can-build').a;
+    return Array.prototype.map.call(box.querySelectorAll('li'), (li) => {
+      const strong = li.querySelector('strong');
+      const t = strong ? strong.textContent : '';
+      if (strong) strong.remove();
+      return { t, html: li.innerHTML.trim() };
+    });
   } catch (e) { return []; }
 })();
-const escHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-function Intro() {
+/* ---------- icons (stroke style, as the homepage) ---------- */
+
+function Icon({ d, size = 26, className = '' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className={className}>
+      {d.map((p, i) => <path key={i} d={p} />)}
+    </svg>
+  );
+}
+const IC = {
+  tick: ['M4 12.5l5 5L20 6.5'],
+  cross: ['M6 6l12 12M18 6L6 18'],
+  eye: ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
+  ruler: ['M3 17L17 3l4 4L7 21z', 'M7 13l2 2M10 10l2 2M13 7l2 2'],
+  table: ['M3 9h18', 'M5 9v11M19 9v11', 'M8 5h8v4H8z'],
+  book: ['M2 5c3.3-1 6.7-.7 10 1.5C15.3 4.3 18.7 4 22 5v14c-3.3-1-6.7-.7-10 1.5C8.7 18.3 5.3 18 2 19z', 'M12 6.5v14'],
+  pound: ['M16 6.5A4 4 0 0 0 8.5 8v4.5M6 12.5h8M8.5 12.5V16L6.5 19H17'],
+  pin: ['M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z', 'M12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'],
+  star: ['M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 2.9 1.1-6.3L3 9.7l6.2-.9z'],
+  face: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', 'M8.5 14.5s1.2 2 3.5 2 3.5-2 3.5-2M9 9.5h.01M15 9.5h.01'],
+  chart: ['M4 20V4M4 20h16', 'M8 16v-4M12 16V8M16 16v-6']
+};
+const BUILD_ICONS = [IC.book, IC.pound, IC.pin, IC.star, IC.face, IC.chart];
+
+/* ---------- shared bits ---------- */
+
+const H2_CLASS = 'scroll-mt-28 font-hd text-[clamp(30px,6.4vw,68px)] font-bold uppercase leading-[0.98] tracking-[-0.01em]';
+
+function SectionHead({ n, id, dark = false, children }) {
+  return (
+    <Reveal className="mb-8 flex flex-col gap-4 md:mb-12">
+      <Label dark={!dark}>{'0' + n}</Label>
+      <h2 id={id} className={H2_CLASS}>{qa(id).q}</h2>
+      {children}
+    </Reveal>
+  );
+}
+
+/* ---------- 1. hero ---------- */
+
+const INTRO = sentences(
+  "I help owner-run window and door companies turn more surveys into signed orders. That usually means a quote people actually want to read, a website that shows the jobs you're proud of, ads with your own face in them, and a steady flow of Google reviews. I'm Alex. I've worked in marketing for 15 years and I couldn't fit a window if you paid me. You can. That's the deal."
+);
+
+// The hero text is not wrapped in <Reveal>: the page loader is its entrance, and it is the largest thing on screen,
+// so it paints as soon as the loader lifts (better Largest Contentful Paint).
+function Hero() {
   return (
     <section className="bg-ink">
-      <div className="gutter mx-auto max-w-[1280px] pb-14 pt-10 md:pb-20 md:pt-16">
-        <Reveal className="flex flex-col gap-6">
+      <div className="gutter mx-auto max-w-[1280px] pb-12 pt-8 md:pb-20 md:pt-14">
+        <div className="flex flex-col gap-6">
           <nav aria-label="Breadcrumb" className="font-mono text-[12px] uppercase tracking-[0.14em] text-mute">
             <a className="hover:text-hi" href="/">Winch Marketing</a> <span aria-hidden="true">/</span> <span className="text-hi">Windows and doors</span>
           </nav>
-          <h1 className="font-hd text-[clamp(40px,8.4vw,104px)] font-bold uppercase leading-[0.95] tracking-[-0.01em]">
+          <h1 className="font-hd text-[min(12.6vw,68px)] font-bold uppercase leading-[0.95] tracking-[-0.01em] lg:text-[min(7vw,112px)]">
             Marketing for{' '}<br /><span className="text-hi">window and door companies</span>
           </h1>
+          <p className="max-w-[640px] text-[20px] leading-snug text-white/85 md:text-[24px]">{INTRO[0]}</p>
+        </div>
+        <div className="mt-8 flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <a href={BOOK_URL} target="_blank" rel="noopener" className="btn rounded-[4px] bg-hi px-7 py-4 text-center font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-black hover:bg-white">Book a call</a>
+            <a href={DEMO_URL} className="btn rounded-[4px] border-2 border-white/40 px-7 py-[14px] text-center font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-white hover:border-hi hover:text-hi">See the quote demo</a>
+          </div>
+          <p className="font-mono text-[12px] uppercase tracking-[0.12em] text-mute">Alex · 15 years in marketing · can't fit a window</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 2. summary card + 3. jump links ---------- */
+
+function Summary() {
+  return (
+    <section className="bg-paper text-black">
+      <div className="gutter mx-auto max-w-[1280px] pb-6 pt-12 md:pb-10 md:pt-20">
+        <Reveal>
+          <div className="rounded-[4px] border border-black/10 border-l-[6px] border-l-hi bg-white p-6 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.35)] md:p-10">
+            <p className="font-mono text-[12px] tracking-[0.12em] text-black/60">(In short)</p>
+            <p className="mt-3 max-w-[900px] text-[19px] leading-relaxed text-black/80 md:text-[23px]">
+              {INTRO.slice(1, -1).join(' ')} <strong className="font-bold text-black">{INTRO[INTRO.length - 1]}</strong>
+            </p>
+          </div>
         </Reveal>
-        <Reveal delay={120}>
-          <p className="mt-10 max-w-[860px] rounded-[4px] bg-hi p-6 text-[19px] leading-relaxed text-black md:p-10 md:text-[22px]">
-            I help owner-run window and door companies turn more surveys into signed orders. That usually means a quote people actually want to read, a website that shows the jobs you're proud of, ads with your own face in them, and a steady flow of Google reviews. I'm Alex. I've worked in marketing for 15 years and I couldn't fit a window if you paid me. You can. That's the deal.
-          </p>
-        </Reveal>
-        <Reveal delay={200}>
-          <nav aria-label="On this page" className="mt-10">
-            <ul className="m-0 flex list-none flex-col p-0 font-mono text-[12px] uppercase tracking-[0.12em] md:flex-row md:flex-wrap md:items-center md:gap-x-3">
-              {JUMPS.map(([id, t], i) => (
-                <li key={id} className="flex items-center gap-3">
-                  {i > 0 && <span aria-hidden="true" className="hidden text-dim md:inline">·</span>}
-                  <a href={'#' + id} className="inline-flex min-h-[44px] items-center text-mute underline decoration-white/30 underline-offset-4 hover:text-hi">{t}</a>
+        <Reveal delay={100}>
+          <nav aria-label="On this page" className="-mx-5 mt-8 md:mx-0 md:mt-10">
+            <ul className="noscroll m-0 flex list-none gap-2 overflow-x-auto px-5 pb-2 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+              {JUMPS.map(([id, t]) => (
+                <li key={id} className="shrink-0">
+                  <a href={'#' + id} className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-black/20 bg-white px-4 font-mono text-[12px] uppercase tracking-[0.1em] text-black hover:border-black hover:bg-black hover:text-hi focus-visible:outline-black">{t}</a>
                 </li>
               ))}
             </ul>
@@ -289,22 +377,183 @@ function Intro() {
   );
 }
 
-function Answers() {
+/* ---------- 4. who it's for ---------- */
+
+const WHO_TICKS = ['Owner-run', '5 to 25 people', 'Sell through a survey or showroom', 'Jobs worth a few thousand pounds'];
+
+function Who() {
+  const s = sentences(qa('who-its-for').a);   // 2 about who, then "not for you", then "for you"
   return (
     <section className="bg-paper text-black">
-      <div className="gutter mx-auto max-w-[1280px] py-16 md:py-24">
-        {QA.map((x, i) => (
-          <Reveal key={x.id} className={'grid gap-4 border-black/15 py-10 md:grid-cols-[80px_1fr_1.25fr] md:gap-8 md:py-14' + (i ? ' border-t' : '')}>
-            <span className="font-mono text-[12px] tracking-[0.12em] text-black/50">{'(0' + (i + 1) + ')'}</span>
-            <h2 id={x.id} className="scroll-mt-28 font-hd text-[clamp(26px,3.6vw,44px)] font-bold uppercase leading-[1.05]">{x.q}</h2>
-            <div
-              className="text-[18px] leading-relaxed text-black/75 [&_a]:font-bold [&_a]:text-black [&_a]:underline [&_a]:decoration-hi [&_a]:decoration-[3px] [&_a]:underline-offset-4 hover:[&_a]:decoration-black [&_li]:mt-5 [&_li]:border-l-[3px] [&_li]:border-hi [&_li]:pl-4 [&_li:first-child]:mt-0 [&_strong]:font-bold [&_strong]:text-black [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0"
-              dangerouslySetInnerHTML={{ __html: x.a.charAt(0) === '<' ? x.a : '<p>' + escHtml(x.a) + '</p>' }}
-            />
+      <div className="gutter mx-auto max-w-[1280px] py-12 md:py-20">
+        <SectionHead n={1} id="who-its-for" />
+        <div className="grid gap-8 md:grid-cols-[1.1fr_1fr] md:gap-14">
+          <Reveal>
+            <p className="text-[19px] leading-relaxed text-black/75 md:text-[21px]">{s.slice(0, 2).join(' ')}</p>
           </Reveal>
-        ))}
+          <Reveal delay={100}>
+            <ul className="m-0 grid list-none gap-3 p-0">
+              {WHO_TICKS.map((t) => (
+                <li key={t} className="flex items-center gap-4 rounded-[4px] bg-white px-4 py-3 shadow-[0_12px_24px_-20px_rgba(0,0,0,0.4)]">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-hi text-black"><Icon d={IC.tick} size={20} /></span>
+                  <span className="font-hd text-[19px] font-bold">{t}</span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </div>
+        <Reveal delay={80} className="mt-8 grid gap-4 md:mt-12 md:grid-cols-2">
+          <div className="rounded-[4px] border border-black/15 p-6">
+            <p className="flex items-center gap-2 font-mono text-[12px] font-bold uppercase tracking-[0.12em] text-black/55"><Icon d={IC.cross} size={16} />Not for you if</p>
+            <p className="mt-3 text-[18px] leading-relaxed text-black/75">{s[2]}</p>
+          </div>
+          <div className="rounded-[4px] bg-ink p-6 text-white">
+            <p className="flex items-center gap-2 font-mono text-[12px] font-bold uppercase tracking-[0.12em] text-hi"><Icon d={IC.tick} size={16} />For you if</p>
+            <p className="mt-3 text-[18px] leading-relaxed text-white/85">{s.slice(3).join(' ')}</p>
+          </div>
+        </Reveal>
       </div>
     </section>
+  );
+}
+
+/* ---------- 5. why windows are different: the journey ---------- */
+
+function Why() {
+  const s = sentences(qa('why-windows-are-different').a);
+  // s[0..2] lead-in; s[3] the PDF problem (step 3); s[4] the callout
+  const steps = [
+    { t: 'Before the survey', icon: IC.eye, d: 'What someone sees before they book it.' },
+    { t: 'The survey', icon: IC.ruler, d: 'Most people get three quotes.' },
+    { t: 'The kitchen table', icon: IC.table, d: s[3] }
+  ];
+  return (
+    <section className="bg-ink">
+      <div className="gutter mx-auto max-w-[1280px] py-14 md:py-24">
+        <SectionHead n={2} id="why-windows-are-different" dark>
+          <p className="max-w-[820px] text-[19px] leading-relaxed text-white/80 md:text-[21px]">{s.slice(0, 3).join(' ')}</p>
+        </SectionHead>
+        <ol className="m-0 grid list-none gap-0 p-0 md:grid-cols-3 md:gap-8">
+          {steps.map((st, i) => (
+            <li key={st.t} className="relative">
+              {/* the line to the next step: down the left on phones, across the top on wider screens */}
+              {i < steps.length - 1 && <span aria-hidden="true" className="absolute bottom-0 left-[27px] top-14 w-[2px] bg-hi/40 md:bottom-auto md:left-14 md:right-[-32px] md:top-[27px] md:h-[2px] md:w-auto"></span>}
+              <Reveal delay={i * 120} className="flex gap-5 pb-8 md:flex-col md:gap-5 md:pb-0">
+                <span className={'relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full ' + (i === 2 ? 'bg-hi text-black' : 'border-2 border-hi bg-ink text-hi')}>
+                  <Icon d={st.icon} />
+                </span>
+                <div>
+                  <p className="font-mono text-[12px] tracking-[0.12em] text-mute">{'(0' + (i + 1) + ')'}</p>
+                  <h3 className="mt-1 font-hd text-[clamp(22px,2.6vw,30px)] font-bold uppercase leading-[1.05]">{st.t}</h3>
+                  <p className="mt-2 text-[17px] leading-relaxed text-white/75">{st.d}</p>
+                </div>
+              </Reveal>
+            </li>
+          ))}
+        </ol>
+        <Reveal delay={200} className="mt-6 md:mt-12 md:ml-[calc(66.6%+11px)]">
+          <p className="rounded-[4px] bg-hi px-5 py-4 font-hd text-[22px] font-bold leading-tight text-black md:text-[26px]">{s[4]}</p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 6. what I can build ---------- */
+
+function Build() {
+  const [quote, ...rest] = BUILD;
+  const html = (h) => ({ __html: h });
+  const linkCls = '[&_a]:font-bold [&_a]:text-black [&_a]:underline [&_a]:decoration-hi [&_a]:decoration-[3px] [&_a]:underline-offset-4 hover:[&_a]:decoration-black';
+  return (
+    <section className="bg-paper text-black">
+      <div className="gutter mx-auto max-w-[1280px] py-14 md:py-24">
+        <SectionHead n={3} id="what-i-can-build" />
+        <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+          {quote && (
+            <Reveal className="md:row-span-3">
+              <article className="flex h-full flex-col gap-6 rounded-[4px] border border-black/10 border-t-[6px] border-t-hi bg-white p-6 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.35)] md:p-8 lg:grid lg:grid-cols-[1.25fr_1fr] lg:items-center">
+                <div>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-hi text-black"><Icon d={BUILD_ICONS[0]} /></span>
+                  <h3 className="mt-5 font-hd text-[clamp(26px,3.4vw,40px)] font-bold uppercase leading-[1.02]">{quote.t.replace(/\.$/, '')}</h3>
+                  <p className={'mt-3 text-[18px] leading-relaxed text-black/70 ' + linkCls} dangerouslySetInnerHTML={html(quote.html)} />
+                  <a href={DEMO_URL} className="btn mt-6 inline-flex min-h-[48px] items-center gap-2 rounded-[4px] bg-black px-6 py-3 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-ink focus-visible:outline-black">Try the demo <span aria-hidden="true">&rarr;</span></a>
+                </div>
+                <div className="rounded-[4px] bg-[#EDEDEA] px-6 py-7 md:mt-auto lg:mt-0">
+                  <Phone src="/proof-quote-demo.jpg" name="Quote demo" alt="The demo quote open on a phone: a flooring company's cover page made out to Mr and Mrs Taylor" />
+                </div>
+              </article>
+            </Reveal>
+          )}
+          {rest.map((c, i) => (
+            <Reveal key={c.t} delay={(i % 2) * 80} className="h-full">
+              <article className="flex h-full gap-5 rounded-[4px] border border-black/10 bg-white p-6 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.35)] md:p-8">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black/80 text-black"><Icon d={BUILD_ICONS[i + 1]} size={22} /></span>
+                <div>
+                  <h3 className="font-hd text-[22px] font-bold uppercase leading-[1.08]">{c.t.replace(/\.$/, '')}</h3>
+                  <p className={'mt-2 text-[17px] leading-relaxed text-black/65 ' + linkCls} dangerouslySetInnerHTML={html(c.html)} />
+                </div>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 7. cost + 8. where I work ---------- */
+
+const AREAS = ['Northallerton', 'Thirsk', 'Darlington', 'Middlesbrough', 'Stockton', 'Teesside', 'North Yorkshire', 'County Durham'];
+
+function Cost() {
+  const s = sentences(qa('cost').a);
+  return (
+    <section className="bg-ink">
+      <div className="gutter mx-auto max-w-[1280px] py-14 md:py-24">
+        <SectionHead n={4} id="cost" dark />
+        <Reveal>
+          <div className="mx-auto max-w-[860px] rounded-[4px] border border-white/15 bg-white/[0.04] p-6 text-center md:p-12">
+            <p className="text-[19px] leading-relaxed text-white/80 md:text-[21px]">{s.slice(0, -1).join(' ')}</p>
+            <p className="mt-6 font-hd text-[clamp(30px,5.4vw,56px)] font-bold uppercase leading-[1.02] text-hi">{s[s.length - 1]}</p>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function Where() {
+  return (
+    <section className="bg-paper text-black">
+      <div className="gutter mx-auto max-w-[1280px] py-14 md:py-24">
+        <SectionHead n={5} id="where-i-work" />
+        <div className="grid gap-8 md:grid-cols-[1fr_1fr] md:gap-14">
+          <Reveal>
+            <p className="text-[19px] leading-relaxed text-black/75 md:text-[21px]">{qa('where-i-work').a}</p>
+          </Reveal>
+          <Reveal delay={100}>
+            <ul aria-label="Areas I cover" className="m-0 flex list-none flex-wrap gap-2 p-0">
+              {AREAS.map((a) => (
+                <li key={a} className="inline-flex min-h-[40px] items-center gap-2 rounded-full bg-white px-4 font-mono text-[13px] uppercase tracking-[0.08em] shadow-[0_10px_20px_-18px_rgba(0,0,0,0.5)]">
+                  <span className="h-[6px] w-[6px] bg-hi" aria-hidden="true"></span>{a}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 9. first 15 minutes: the contact band ---------- */
+
+function First15() {
+  return (
+    <Contact title={qa('first-15-minutes').q} titleId="first-15-minutes" titleClass="scroll-mt-28 text-[clamp(34px,7vw,84px)]">
+      <p className="max-w-[640px] text-[19px] leading-relaxed text-black/80 md:text-[21px]">{qa('first-15-minutes').a}</p>
+    </Contact>
   );
 }
 
@@ -315,9 +564,14 @@ function App() {
       <Banner />
       <Header home={false} />
       <main>
-        <Intro />
-        <Answers />
-        <Contact />
+        <Hero />
+        <Summary />
+        <Who />
+        <Why />
+        <Build />
+        <Cost />
+        <Where />
+        <First15 />
       </main>
       <Footer />
       <StickyBar />

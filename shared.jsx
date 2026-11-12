@@ -121,6 +121,26 @@ function WhatsAppIcon() {
   );
 }
 
+// A phone frame with a screenshot in it (homepage proof cards, window page quote card).
+function Phone({ src, name, alt }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="mx-auto w-full max-w-[210px] shrink-0 rounded-[30px] border-[6px] border-[#1c1c1f] bg-black shadow-[0_24px_40px_-24px_rgba(0,0,0,0.55)] md:max-w-[220px] md:rounded-[34px] md:border-[7px]" style={{ aspectRatio: '9 / 18.5' }}>
+      <div className="relative h-full w-full overflow-hidden rounded-[24px] bg-[#141416] md:rounded-[26px]">
+        {failed ? (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-b from-[#1b1b1e] to-[#0e0e10] px-4 text-center">
+            <span className="h-8 w-8 border-2 border-hi"></span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">Screenshot<br />{name}</span>
+          </div>
+        ) : (
+          <img src={src} alt={alt || name + ' screenshot'} loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover object-top" />
+        )}
+        <span className="absolute left-1/2 top-2 h-[16px] w-[58px] -translate-x-1/2 rounded-full bg-black" aria-hidden="true"></span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- welcome banner (only for ?n= visitors) ---------- */
 
 function Banner() {
@@ -168,7 +188,8 @@ function Header({ home = true }) {
 
 /* ---------- contact (yellow band) ---------- */
 
-function Contact() {
+// The yellow contact band. Other pages can give it their own heading (with an id for jump links) and a line under it.
+function Contact({ title, titleId, titleClass, children }) {
   const [copied, setCopied] = useState(false);
   const email = 'hello@winchmarketing.co.uk';
   const copy = () => {
@@ -185,7 +206,8 @@ function Contact() {
       <div className="gutter mx-auto flex max-w-[1280px] flex-col gap-10 py-16 md:py-24 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
         <Reveal className="flex flex-col gap-5">
           <Label dark>Contact</Label>
-          <h2 className="font-hd text-[clamp(44px,10vw,120px)] font-bold uppercase leading-[0.94] tracking-[-0.01em]">15 minutes.<br />Straight answers.</h2>
+          <h2 id={titleId} className={'font-hd font-bold uppercase leading-[0.94] tracking-[-0.01em] ' + (titleClass || 'text-[clamp(44px,10vw,120px)]')}>{title || <>15 minutes.<br />Straight answers.</>}</h2>
+          {children}
         </Reveal>
         <Reveal delay={120} className="flex w-full flex-col gap-4 md:w-auto md:min-w-[300px] md:self-start lg:shrink-0 lg:self-auto">
           <div className="flex flex-col gap-3">
