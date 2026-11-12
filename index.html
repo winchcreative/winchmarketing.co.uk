@@ -173,6 +173,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="/site.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <script type="text/babel" data-presets="react" src="/shared.jsx"></script>
 <script type="text/babel" data-presets="react">
@@ -383,7 +384,10 @@ function Proof() {
           <WorkCards />
         </div>
 
-        <p className="mt-10 font-mono text-[12px] text-black/55">Work for a home-visit flooring retailer.</p>
+        <div className="mt-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <a href="/work/dc-flooring-quote/" className="btn inline-flex min-h-[48px] items-center gap-2 self-start rounded-[4px] bg-black px-6 py-3 font-mono text-[13px] font-bold uppercase tracking-[0.1em] text-hi hover:bg-ink focus-visible:outline-black">See a real quote tool I built <span aria-hidden="true">&rarr;</span></a>
+          <p className="font-mono text-[12px] text-black/55">Work for a home-visit flooring retailer.</p>
+        </div>
       </div>
     </section>
   );

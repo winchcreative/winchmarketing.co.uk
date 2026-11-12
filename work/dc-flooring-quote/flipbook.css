@@ -1,0 +1,272 @@
+/* DC Flooring quote flipbook: the customer-side styles, copied from DC's quote tool (DCflipbook, index.html).
+   Only the customer booklet, signing dialog and zoom view are here; the admin styles are left out.
+   The demo layer (banner, hotspots, tour) is in demo-layer.css. */
+:root{
+  --bark:#241a14; --walnut:#3c2c22; --oak:#a97e4f; --brass:#b08d57;
+  --linen:#f3ede1; --linen-soft:rgba(243,237,225,.62); --paper:#faf6ee; --ink:#2a2019; --ink-soft:#6b5c4d; --line:#d9cbb2;
+  --ok:#4c6b4f; --bad:#a1493f;
+  --dark:#272727;   /* the dark pages / sidebar / dialog header (the dark pages still write it out as #272727) */
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; min-height:100%; background:var(--linen); font-family:'Work Sans',sans-serif; color:var(--ink); }
+button{ font-family:inherit; }
+::selection{ background:var(--brass); color:#fff; }
+
+/* ===== shared bits ===== */
+.eyebrow{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--oak); margin:0 0 6px; }
+.mono{ font-family:'IBM Plex Mono',monospace; }
+h1,h2,h3{ font-family:'Fraunces',serif; font-weight:600; margin:0; }
+
+.btn{ padding:10px 18px; border-radius:4px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid transparent; }
+.btn:disabled{ opacity:.6; cursor:default; }
+.btn-primary{ background:var(--brass); color:#fff; }
+.btn-primary:hover{ background:var(--oak); }
+
+/* ===== CUSTOMER (booklet) ===== */
+#customer{ display:flex; position:relative; min-height:100vh; align-items:center; justify-content:center; padding:48px 16px;
+  background:radial-gradient(ellipse at 50% -10%, #4a372a 0%, var(--bark) 55%), var(--bark); }
+.stage{ width:100%; max-width:480px; display:flex; flex-direction:column; align-items:center; gap:22px; }
+.book-wrap{ position:relative; width:100%; aspect-ratio:1000/1400; }
+.spine-shadow{ position:absolute; inset:0; border-radius:6px; box-shadow:0 30px 60px -20px rgba(0,0,0,.65), 0 10px 25px -10px rgba(0,0,0,.5); pointer-events:none; z-index:-1; }
+.book-back{ position:absolute; inset:0; background:#272727; border-radius:6px; }
+#book{ width:100%; height:100%; }
+.page{ position:relative; height:100%; padding:26px 22px 22px 32px; display:flex; flex-direction:column; overflow:hidden auto; background:var(--paper); border-radius:6px; border:1px solid var(--line); }
+.page::before{ content:""; position:absolute; top:0; left:0; bottom:0; width:18px; background:linear-gradient(to right, rgba(36,26,20,.16), transparent); z-index:1; }
+.page.img-page{ padding:0; overflow:hidden; }
+.page-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.cover-fields{ position:absolute; left:48%; width:40%; top:85.5%; text-align:right; display:flex; flex-direction:column; gap:.15em; line-height:1.15; color:#f3ede1; font-family:'IBM Plex Mono',monospace; z-index:2; }
+.cover-fields .cf-name{ font-size:.85em; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cover-fields .cf-ref, .cover-fields .cf-date{ font-size:.68em; color:#d8c8ae; white-space:nowrap; }
+.cover{ background:radial-gradient(120% 90% at 15% 0%, #4d3826 0%, transparent 55%), linear-gradient(155deg, var(--walnut), var(--bark) 70%); color:var(--linen); justify-content:space-between; padding-left:56px; }
+.cover .mark{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.3em; color:var(--brass); text-transform:uppercase; }
+.cover h1{ font-family:'Fraunces',serif; font-weight:600; font-size:clamp(34px,5.5vw,52px); line-height:1.02; margin:16px 0 0; }
+.cover .rule{ width:64px; height:2px; background:var(--brass); margin:20px 0; }
+.cover .sub{ font-size:13.5px; color:#d8c8ae; max-width:340px; line-height:1.55; }
+.cover .meta{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#cbb896; line-height:1.9; }
+.cover .meta b{ color:var(--linen); font-weight:500; }
+h2.title{ font-family:'Fraunces',serif; font-weight:600; font-size:28px; margin:0 0 16px; color:var(--ink); }
+.pageno{ position:absolute; bottom:16px; right:56px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--ink-soft); letter-spacing:.1em; }
+.about p{ font-size:14px; line-height:1.7; color:var(--ink-soft); max-width:60ch; }
+.streams{ display:flex; gap:12px; margin-top:18px; }
+.stream{ flex:1; border:1px solid var(--line); border-radius:4px; padding:12px 13px 14px; background:linear-gradient(180deg,#fff,var(--paper)); }
+.stream .n{ font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--brass); letter-spacing:.15em; }
+.stream .t{ font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:4px 0; }
+.stream .d{ font-size:11.5px; color:var(--ink-soft); line-height:1.5; }
+.quotebox{ border:1px solid var(--line); border-radius:4px; overflow:hidden; flex-shrink:0; }
+table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+thead th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); background:var(--linen); padding:8px 11px; border-bottom:1px solid var(--line); }
+tbody td{ padding:9px 11px; border-bottom:1px solid var(--line); color:var(--ink); }
+tbody tr:last-child td{ border-bottom:none; }
+td.num, th.num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
+.totals{ margin-top:12px; align-self:flex-end; width:220px; font-family:'IBM Plex Mono',monospace; font-size:12.5px; flex-shrink:0; }
+.totals div{ display:flex; justify-content:space-between; padding:4px 0; color:var(--ink-soft); }
+.totals .grand{ color:var(--ink); font-weight:600; border-top:1px solid var(--line); margin-top:3px; padding-top:8px; font-size:14.5px; }
+.note{ margin-top:14px; font-size:11px; color:var(--ink-soft); font-style:italic; white-space:pre-wrap; flex-shrink:0; }
+.swatches{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:4px; }
+.swatch{ border-radius:4px; overflow:hidden; border:1px solid var(--line); background:#fff; }
+.swatch .tile{ height:64px; }
+.t1{ background:repeating-linear-gradient(100deg,#a97e4f 0 10px,#8f6a41 10px 20px); }
+.t2{ background:repeating-linear-gradient(45deg,#5b4331 0 8px,#6f5238 8px 16px); }
+.t3{ background:linear-gradient(135deg,#c9bda3,#e4dcc9); }
+.t4{ background:repeating-linear-gradient(90deg,#7a6a52 0 6px,#8c7a5f 6px 12px); }
+.t5{ background:linear-gradient(135deg,#3c2c22,#5c4432); }
+.t6{ background:repeating-linear-gradient(120deg,#c2a06b 0 12px,#b08d57 12px 24px); }
+.swatch .cap{ padding:8px 9px 10px; }
+.swatch .cap .p{ font-family:'Fraunces',serif; font-weight:600; font-size:12.5px; }
+.swatch .cap .s{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:var(--ink-soft); margin-top:2px; }
+.decision{ justify-content:center; align-items:center; text-align:center; }
+/* StPageFlip forces inline display:block on the page element mid-flip, which defeats the
+   .decision flex-centering above (justify/align-items only work on a flex container). Centering
+   is done instead on this absolutely-positioned inner wrapper, which stays flex regardless. */
+.decision-inner{ position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:26px 22px 22px 32px; box-sizing:border-box; overflow-y:auto; }
+.decision-inner > :first-child{ margin-top:auto; }
+.decision-inner > :last-child{ margin-bottom:auto; }
+/* the shop's name, phone and email at the foot of the Decision page (the only place the customer sees them) */
+.decision-inner > .decision-contact{ margin:auto 0 18px; }
+.decision-contact{ width:100%; max-width:380px; padding-top:14px; border-top:1px solid #3d3d3d; font-family:'Work Sans',sans-serif; font-size:18px; line-height:1.5; color:var(--linen-soft); overflow-wrap:anywhere; }
+.decision-contact b{ display:block; color:var(--linen); font-weight:600; }
+.decision-contact a{ color:var(--linen); }
+.decision-contact .dc-sep{ color:var(--brass); }
+.decision h2.title{ margin-bottom:8px; }
+.decision p.lead{ font-size:13.5px; color:var(--ink-soft); max-width:44ch; margin:0 0 24px; }
+.decision-btns{ display:flex; flex-direction:column; gap:14px; width:100%; max-width:380px; }
+.dbtn{ padding:12px 22px; border-radius:5px; font-size:13px; font-weight:600; cursor:pointer; border:1px solid transparent; }
+.decision-btns .dbtn{ width:100%; min-height:56px; font-size:16px; }
+.dbtn.sign{ background:var(--ok); color:#fff; font-size:19px; }
+.decision-btns .dbtn.sign{ font-size:19px; }
+.dbtn.sign:hover{ background:#3f5a42; }
+.dbtn:focus-visible, .sg-modal :focus-visible{ outline:3px solid var(--brass); outline-offset:3px; }
+.dbtn:disabled{ opacity:.6; cursor:default; }
+.phone-line{ margin:18px 0 0; max-width:34ch; font-size:15px; line-height:1.5; color:var(--linen-soft); }
+.phone-line a{ color:var(--linen); font-weight:600; white-space:nowrap; }
+.signed-box{ margin-top:16px; width:100%; max-width:340px; }
+.signed-card{ padding:16px 16px 14px; border:1px solid var(--line); border-radius:4px; background:linear-gradient(180deg,#fff,var(--paper)); color:var(--ink); text-align:center; box-shadow:0 10px 25px -10px rgba(0,0,0,.5); }
+.signed-stamp{ display:inline-block; margin-bottom:10px; padding:2px 14px; border:2px solid var(--ok); border-radius:4px; transform:rotate(-3deg); font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--ok); }
+.signed-by{ font-family:'IBM Plex Mono',monospace; font-size:18px; color:var(--ink-soft); }
+.signed-name{ margin:2px 0; font-family:'Fraunces',serif; font-weight:600; font-size:24px; line-height:1.2; overflow-wrap:anywhere; }
+.signed-date{ font-family:'IBM Plex Mono',monospace; font-size:18px; color:var(--ink-soft); }
+.signed-img{ margin:12px auto 14px; padding:8px; background:#fff; border:1px solid var(--line); border-radius:4px; }
+.signed-img img{ display:block; max-width:100%; max-height:110px; margin:0 auto; }
+.dbtn.copy{ width:100%; min-height:56px; font-size:18px; background:none; border:2px solid var(--brass); color:var(--ink); }
+.dbtn.copy:hover{ background:var(--brass); color:#fff; }
+.dbtn.decline{ background:none; border-color:var(--bad); color:var(--bad); }
+.dbtn.decline:hover{ background:var(--bad); color:#fff; }
+.decline-form{ margin-top:20px; width:100%; max-width:380px; }
+.decline-form textarea{ width:100%; min-height:80px; padding:10px 12px; border:1px solid var(--line); border-radius:4px; font-family:'Work Sans',sans-serif; font-size:13px; }
+.decline-form .btn{ margin-top:10px; }
+.decision-error{ margin-top:14px; max-width:38ch; font-size:12.5px; line-height:1.45; color:#df9c90; }
+.decided-note{ margin-top:12px; font-size:12px; color:var(--linen-soft); }
+.decided-state{ text-align:center; }
+.decided-state .badge{ font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.1em; text-transform:uppercase; padding:6px 14px; border-radius:20px; display:inline-block; margin-bottom:12px; }
+.decided-state.accepted .badge{ background:#dbe6dc; color:var(--ok); }
+.decided-state.declined .badge{ background:#f0dcd9; color:var(--bad); }
+.decided-msg{ font-size:13px; max-width:38ch; }
+
+/* ===== e-signature dialog: a full-screen page of the book. Paper background, dark header like the sidebar, serif titles ===== */
+.sg-modal{ position:fixed; inset:0; z-index:10000; display:flex; flex-direction:column; background:var(--paper); color:var(--ink); font-family:'Work Sans',sans-serif; font-size:18px; line-height:1.5; }
+.sg-top{ flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 12px 8px 20px; background:var(--dark); border-bottom:2px solid var(--brass); }
+.sg-logo{ display:block; width:96px; height:auto; aspect-ratio:8/5; object-fit:cover; object-position:50% 46%; mix-blend-mode:lighten; }
+.sg-x{ flex:none; width:56px; height:56px; border:2px solid var(--brass); border-radius:5px; background:none; color:var(--linen); font-size:32px; line-height:1; cursor:pointer; }
+.sg-x:hover:not(:disabled){ background:var(--brass); color:#fff; }
+.sg-x:disabled{ opacity:.4; cursor:default; }
+.sg-prog{ flex:none; width:100%; max-width:720px; margin:0 auto; padding:14px 20px 0; }
+.sg-stepno{ font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; letter-spacing:.14em; text-transform:uppercase; color:var(--walnut); }
+.sg-bar{ display:flex; gap:6px; margin-top:8px; }
+.sg-bar i{ flex:1; height:6px; border-radius:3px; background:var(--line); }
+.sg-bar i.on{ background:var(--brass); }
+.sg-scroll{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.sg-body{ min-height:100%; display:flex; flex-direction:column; gap:16px; width:100%; max-width:720px; margin:0 auto; padding:14px 20px 20px; }
+.sg-step{ display:flex; flex-direction:column; gap:16px; flex:1 1 auto; min-height:0; }
+.sg-step[hidden]{ display:none; }
+.sg-modal h2{ margin:0; font-size:32px; line-height:1.15; color:var(--ink); }
+.sg-modal h2:focus{ outline:none; }
+.sg-modal p{ margin:0; font-size:18px; }
+.sg-input{ width:100%; min-height:64px; padding:10px 14px; border:2px solid var(--brass); border-radius:5px; background:#fff; color:var(--ink); font-family:inherit; font-size:24px; }
+.sg-btn{ width:100%; min-height:56px; padding:10px 18px; border:2px solid var(--brass); border-radius:5px; background:none; color:var(--ink); font-family:inherit; font-size:20px; font-weight:600; cursor:pointer; }
+.sg-btn:hover:not(:disabled){ background:var(--linen); }
+.sg-btn.primary{ background:var(--brass); color:#fff; }
+.sg-btn.primary:hover:not(:disabled){ background:var(--oak); border-color:var(--oak); }
+.sg-btn:disabled{ opacity:.6; cursor:default; }
+.sg-btn-row{ display:flex; gap:12px; }
+.sg-btn-row .sg-btn{ flex:1 1 0; }
+.sg-link{ align-self:center; min-height:56px; padding:8px 16px; border:0; background:none; color:var(--ink); font-family:inherit; font-size:20px; font-weight:600; text-decoration:underline; cursor:pointer; }
+.sg-error{ font-size:18px; font-weight:600; color:var(--bad); }
+.sg-error:empty{ display:none; }
+.sg-padwrap{ position:relative; flex:1 1 auto; min-height:220px; border:1px solid var(--line); border-radius:6px; background:#fff; box-shadow:0 10px 25px -10px rgba(0,0,0,.5); }
+.sg-padwrap canvas{ position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; }
+.sg-guide{ position:absolute; left:6%; right:6%; bottom:26%; border-bottom:2px solid var(--line); pointer-events:none; }
+.sg-guide span{ position:absolute; left:0; bottom:6px; font-size:18px; color:var(--ink-soft); opacity:.55; }
+.sg-padwrap.has-ink .sg-guide span{ display:none; }
+.sg-review{ padding:4px 16px 10px; border:1px solid var(--line); border-radius:4px; background:linear-gradient(180deg,#fff,var(--paper)); font-family:'IBM Plex Mono',monospace; }
+.sg-row{ display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); color:var(--ink-soft); font-size:18px; }
+.sg-row .v{ color:var(--ink); font-size:20px; text-align:right; overflow-wrap:anywhere; }
+.sg-row.sig{ flex-direction:column; align-items:flex-start; }
+.sg-row.sig img{ display:block; max-width:100%; max-height:150px; }
+.sg-row.grand{ border-bottom:none; margin-top:3px; padding-top:12px; color:var(--ink); font-weight:600; }
+.sg-row.grand .v{ font-size:26px; font-weight:600; }
+.sg-check{ display:flex; align-items:center; gap:14px; min-height:64px; padding:12px 14px; border:2px solid var(--brass); border-radius:5px; background:#fff; font-size:20px; font-weight:600; cursor:pointer; }
+.sg-check input{ flex:none; width:32px; height:32px; margin:0; accent-color:var(--brass); }
+.sg-phone{ margin-top:auto; padding-top:8px; font-size:18px; }
+.sg-phone a{ color:var(--ink); font-weight:600; white-space:nowrap; }
+@media (max-height:520px){
+  .sg-top{ padding-top:4px; padding-bottom:4px; }
+  .sg-logo{ width:72px; }
+  .sg-prog{ padding-top:8px; }
+  .sg-body, .sg-step{ gap:10px; }
+  .sg-body{ padding:8px 20px 10px; }
+  .sg-modal h2{ font-size:24px; }
+  .sg-padwrap{ min-height:120px; }
+  #sgS2 > p{ display:none; }   /* the title says it; the room goes to the signing box */
+}
+@media (prefers-reduced-motion:no-preference){
+  .sg-modal{ animation:sgIn .22s ease-out; }
+  .sg-modal.is-closing{ animation:sgOut .18s ease-in forwards; pointer-events:none; }
+  .sg-step.is-in{ animation:sgStepIn .25s ease-out; }
+}
+@keyframes sgIn{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
+@keyframes sgOut{ from{ opacity:1; transform:none; } to{ opacity:0; transform:translateY(14px); } }
+@keyframes sgStepIn{ from{ opacity:0; transform:translateX(var(--sg-from,18px)); } to{ opacity:1; transform:none; } }
+
+/* ===== dark content pages: Quote / Decision ===== */
+.dark-page{ background:#272727; border-color:#3d3d3d; color:var(--linen); }
+.dark-page::before{ background:linear-gradient(to right, rgba(0,0,0,.35), transparent); }
+.dark-page .eyebrow{ font-family:'Poppins',sans-serif; font-weight:500; letter-spacing:.16em; color:var(--brass); }
+.dark-page h2.title{ font-family:'Poppins',sans-serif; font-weight:500; text-transform:uppercase; letter-spacing:.02em; font-size:21px; color:#fff; }
+.dark-page .pageno{ color:rgba(243,237,225,.4); }
+
+.dark-page .quotebox{ border-color:#3d3d3d; }
+.dark-page thead th{ background:#1d1d1d; color:var(--brass); border-bottom-color:#3d3d3d; }
+.dark-page tbody td{ color:var(--linen); border-bottom-color:#3d3d3d; }
+.dark-page .totals div{ color:var(--linen-soft); }
+.dark-page .totals .grand{ color:var(--brass); border-top-color:#3d3d3d; }
+.dark-page .note{ color:var(--linen-soft); }
+
+.dark-page .swatch{ background:#1d1d1d; border-color:#3d3d3d; }
+.dark-page .swatch .cap .p{ color:var(--linen); }
+.dark-page .swatch .cap .s{ color:var(--linen-soft); }
+
+
+.dark-page.decision p.lead{ color:var(--linen-soft); }
+.dark-page .decided-msg{ color:var(--linen-soft); }
+.dark-page .dbtn.decline{ border-color:#c96b5c; color:#df9c90; }
+.dark-page .dbtn.decline:hover{ background:#c96b5c; color:#fff; }
+.dark-page .decline-form textarea{ background:#1d1d1d; border-color:#3d3d3d; color:var(--linen); }
+
+
+/* tightened spacing so long itemised breakdowns (8-10+ rows) keep totals visible;
+   .page already has overflow:hidden auto as a scroll fallback beyond that */
+.quote h2.title{ margin:0 0 10px; font-size:24px; }
+.quote table{ font-size:11.5px; }
+.quote thead th{ padding:6px 9px; font-size:9px; }
+.quote tbody td{ padding:6px 9px; }
+.quote .totals{ margin-top:8px; font-size:11.5px; }
+.quote .totals div{ padding:3px 0; }
+.quote .totals .grand{ margin-top:2px; padding-top:6px; font-size:13px; }
+.quote .note{ margin-top:8px; font-size:10px; }
+/* ===== customer flipbook: swipes and zoom =====
+   Sideways swipes are handled by installSwipe() (one finger, mostly horizontal); the book keeps touch-action:pan-y, so a pinch on the book
+   does nothing. Zooming is done with the magnifier button on each page, which opens the zoom view below. */
+#custStage .stf__parent, #custStage .page{ touch-action:pan-y; }
+.zoom-btn{ align-self:flex-end; margin-bottom:-14px; display:flex; align-items:center; justify-content:center; width:38px; height:38px; padding:0; border:1px solid var(--brass); border-radius:5px; background:var(--bark); color:var(--linen); cursor:pointer; }   /* sits above the book, top right (80% of the old 48px) */
+.zoom-btn svg{ width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
+.zoom-btn:hover{ background:var(--brass); color:var(--bark); }
+.zoom-btn:focus-visible{ outline:3px solid var(--brass); outline-offset:2px; }
+.zv{ position:fixed; inset:0; z-index:9000; display:flex; flex-direction:column; background:var(--paper); color:var(--ink); font-family:'Work Sans',sans-serif; font-size:18px; }
+.zv-scroll{ flex:1 1 auto; min-height:0; display:flex; padding:16px; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y pinch-zoom; }
+.zv-scroll:focus-visible{ outline:3px solid var(--brass); outline-offset:-3px; }
+.zv-stage{ position:relative; flex:none; margin:auto; }   /* auto margins centre a small page and still let a big one scroll */
+.zv-sheet{ position:absolute; left:0; top:0; display:flex; transform-origin:0 0; box-shadow:0 10px 25px -10px rgba(0,0,0,.5); }
+.zv-sheet .page{ flex:none; margin:0; overflow:visible; }   /* the copy must not be a scroll box of its own, or it swallows the drag */
+.zv-sheet .decision-inner{ overflow:visible; }
+.zv-sheet .decision-btns, .zv-sheet .decline-form, .zv-sheet .decision-error, .zv-sheet .dbtn{ display:none; }   /* the buttons only work on the real page */
+.zv-bar{ flex:none; display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:2px solid var(--line); background:var(--paper); }
+.zv-bar .sg-btn{ width:auto; }
+.zv-bar .zv-step{ flex:none; width:56px; padding:0; font-size:30px; line-height:1; }
+.zv-bar .zv-close{ flex:1 1 auto; }
+.zv-level{ flex:none; min-width:64px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:500; }
+@media (prefers-reduced-motion:no-preference){
+  .zv{ animation:sgIn .22s ease-out; }
+  .zv.is-closing{ animation:sgOut .18s ease-in forwards; pointer-events:none; }
+}
+.controls{ display:flex; align-items:center; gap:16px; }
+.nav-btn{ font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; background:transparent; color:var(--linen); border:1px solid #5a4433; padding:8px 15px; border-radius:3px; cursor:pointer; }
+.nav-btn:hover:not(:disabled){ background:var(--brass); color:#241a14; border-color:var(--brass); }
+.nav-btn:disabled{ opacity:.3; cursor:default; }
+.dots{ display:flex; gap:6px; }
+.dot{ width:6px; height:6px; border-radius:50%; background:#5a4433; }
+.dot.active{ background:var(--brass); }
+.not-found{ color:var(--linen); text-align:center; font-family:'IBM Plex Mono',monospace; font-size:13px; }
+
+@media (max-width:640px){
+  .page{ padding:28px 24px 28px 38px; }
+  .decision-inner{ padding:28px 24px 28px 38px; }
+  .cover{ padding-left:38px; }
+  .streams{ flex-direction:column; }
+  .swatches{ grid-template-columns:repeat(2,1fr); }
+  .quote{ padding-top:18px; padding-bottom:14px; }
+  .quote h2.title{ font-size:20px; margin-bottom:8px; }
+  .quote thead th{ padding:4px 7px; }
+  .quote tbody td{ padding:4px 7px; font-size:11px; }
+  .quote .totals{ margin-top:6px; }
+  .quote .note{ margin-top:6px; font-size:9px; }
+}

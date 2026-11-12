@@ -87,7 +87,6 @@
 }
 </script>
 <!-- The question sections on this page are rendered from this block, so the markup and the visible text never drift apart. -->
-<!-- TODO: link "There's a demo you can try." (first item under what-i-can-build) to the quote demo. There is no demo link on the site yet. -->
 <script type="application/ld+json" id="ld-faq">
 {
   "@context": "https://schema.org",
@@ -117,7 +116,7 @@
       "name": "What can you actually build for my company?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "<ul><li><strong>A quote people want to read.</strong> A digital flip-through quote with photos of your work, your team, the spec, the guarantees and a way to sign online. I built one for a flooring company and it's in use now. There's a demo you can try.</li><li><strong>Finance shown as a monthly figure.</strong> If you offer finance, a simple calculator so people see a monthly cost, not just a big number. I built one for a pay-weekly flooring company.</li><li><strong>Pages for the towns you cover.</strong> Real pages with jobs from that town, not ten copies of the same text with the name swapped.</li><li><strong>Reviews that keep coming.</strong> A simple ask after every fit, so your Google rating reflects the work you actually do.</li><li><strong>Ads that look like you.</strong> Facebook and Instagram ads featuring you or your fitters, because people buy from people they recognise.</li><li><strong>Tracking that tells the truth.</strong> So you know which ads bring surveys, not just clicks.</li></ul>"
+        "text": "<ul><li><strong>A quote people want to read.</strong> A digital flip-through quote with photos of your work, your team, the spec, the guarantees and a way to sign online. I built one for a flooring company and it's in use now. <a href=\"/work/dc-flooring-quote/\">See a real quote tool I built</a>.</li><li><strong>Finance shown as a monthly figure.</strong> If you offer finance, a simple calculator so people see a monthly cost, not just a big number. I built one for a pay-weekly flooring company.</li><li><strong>Pages for the towns you cover.</strong> Real pages with jobs from that town, not ten copies of the same text with the name swapped.</li><li><strong>Reviews that keep coming.</strong> A simple ask after every fit, so your Google rating reflects the work you actually do.</li><li><strong>Ads that look like you.</strong> Facebook and Instagram ads featuring you or your fitters, because people buy from people they recognise.</li><li><strong>Tracking that tells the truth.</strong> So you know which ads bring surveys, not just clicks.</li></ul>"
       }
     },
     {
@@ -231,6 +230,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="/site.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <script type="text/babel" data-presets="react" src="/shared.jsx"></script>
 <script type="text/babel" data-presets="react">
@@ -298,7 +298,7 @@ function Answers() {
             <span className="font-mono text-[12px] tracking-[0.12em] text-black/50">{'(0' + (i + 1) + ')'}</span>
             <h2 id={x.id} className="scroll-mt-28 font-hd text-[clamp(26px,3.6vw,44px)] font-bold uppercase leading-[1.05]">{x.q}</h2>
             <div
-              className="text-[18px] leading-relaxed text-black/75 [&_li]:mt-5 [&_li]:border-l-[3px] [&_li]:border-hi [&_li]:pl-4 [&_li:first-child]:mt-0 [&_strong]:font-bold [&_strong]:text-black [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0"
+              className="text-[18px] leading-relaxed text-black/75 [&_a]:font-bold [&_a]:text-black [&_a]:underline [&_a]:decoration-hi [&_a]:decoration-[3px] [&_a]:underline-offset-4 hover:[&_a]:decoration-black [&_li]:mt-5 [&_li]:border-l-[3px] [&_li]:border-hi [&_li]:pl-4 [&_li:first-child]:mt-0 [&_strong]:font-bold [&_strong]:text-black [&_ul]:m-0 [&_ul]:list-none [&_ul]:p-0"
               dangerouslySetInnerHTML={{ __html: x.a.charAt(0) === '<' ? x.a : '<p>' + escHtml(x.a) + '</p>' }}
             />
           </Reveal>

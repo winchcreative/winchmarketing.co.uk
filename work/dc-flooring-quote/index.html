@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quote tool demo for DC Flooring | Winch Marketing</title>
+<meta name="description" content="An example digital quote I built for DC Flooring, with notes on how it works. The customer and prices are made up.">
+<!-- Not indexed for now: the case study page will be indexed instead. Also kept out of sitemap.xml. -->
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Poppins:wght@500;600&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/work/dc-flooring-quote/flipbook.css">
+<link rel="stylesheet" href="/work/dc-flooring-quote/demo-layer.css">
+</head>
+<body>
+
+<!-- Winch banner: what this is, a way home, and the tour -->
+<header class="wm-bar" aria-label="About this demo">
+  <div class="wm-bar-in">
+    <p class="wm-bar-text">Example quote I built for DC Flooring. The customer and prices are made up.</p>
+    <div class="wm-bar-actions">
+      <a class="wm-home" href="/">winchmarketing.co.uk</a>
+      <button class="wm-btn" id="wmTourBtn" type="button">How it works</button>
+      <button class="wm-btn wm-ghost" id="wmNotesBtn" type="button" aria-pressed="false">Hide notes</button>
+    </div>
+  </div>
+</header>
+
+<!-- The quote, as the customer sees it (DC Flooring's flipbook) -->
+<main id="customer">
+  <div class="stage" id="custStage">
+    <button class="zoom-btn" id="zoomBtn" type="button" aria-label="Zoom in on this page"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.9-4.9M10.5 7.5v6M7.5 10.5h6"/></svg></button>
+    <div class="book-wrap">
+      <div class="spine-shadow"></div>
+      <div class="book-back"></div>
+      <div id="book">
+
+        <div class="page img-page" data-density="hard">
+          <img class="page-bg" src="/work/dc-flooring-quote/1.webp" alt="Floors for Living, cover">
+          <div class="cover-fields">
+            <div class="cf-name">Mr &amp; Mrs Taylor</div>
+            <div class="cf-ref">Ref: DEMO-001</div>
+            <div class="cf-date" id="cfDate"></div>
+          </div>
+        </div>
+
+        <div class="page img-page" data-density="hard">
+          <img class="page-bg" src="/work/dc-flooring-quote/2.webp" alt="Floors for Living, about us">
+        </div>
+
+        <div class="page img-page" data-density="hard">
+          <img class="page-bg" src="/work/dc-flooring-quote/3.png" alt="Floors for Living, how we work">
+        </div>
+
+        <!-- The made-up quote. flipbook.js reads the quantities and prices from these rows for the totals. -->
+        <div class="page quote dark-page" data-density="hard">
+          <div class="eyebrow">Your Quote</div><h2 class="title">Itemised breakdown</h2>
+          <div class="quotebox"><table><thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit Price</th><th class="num">Total</th></tr></thead><tbody id="lineItems">
+            <tr data-qty="24" data-price="30"><td>Lounge: 80/20 wool twist carpet, oatmeal</td><td class="num">24 m²</td><td class="num">£30.00</td><td class="num">£720.00</td></tr>
+            <tr data-qty="24" data-price="5"><td>Lounge: underlay and gripper</td><td class="num">24 m²</td><td class="num">£5.00</td><td class="num">£120.00</td></tr>
+            <tr data-qty="18" data-price="30"><td>Hall, stairs and landing: same carpet</td><td class="num">18 m²</td><td class="num">£30.00</td><td class="num">£540.00</td></tr>
+            <tr data-qty="1" data-price="150"><td>Stairs: fitting, 13 steps</td><td class="num">1</td><td class="num">£150.00</td><td class="num">£150.00</td></tr>
+            <tr data-qty="14" data-price="40"><td>Kitchen: luxury vinyl plank, grey oak</td><td class="num">14 m²</td><td class="num">£40.00</td><td class="num">£560.00</td></tr>
+            <tr data-qty="1" data-price="120"><td>Kitchen: floor levelling</td><td class="num">1</td><td class="num">£120.00</td><td class="num">£120.00</td></tr>
+            <tr data-qty="1" data-price="300"><td>Fitting: lounge, hall and kitchen</td><td class="num">1</td><td class="num">£300.00</td><td class="num">£300.00</td></tr>
+            <tr data-qty="1" data-price="80"><td>Uplift and disposal of old flooring</td><td class="num">1</td><td class="num">£80.00</td><td class="num">£80.00</td></tr>
+          </tbody></table></div>
+          <div class="totals"><div><span>Subtotal</span><span>£2,590.00</span></div><div><span>VAT (20%)</span><span>£518.00</span></div><div class="grand"><span>Total</span><span>£3,108.00</span></div></div>
+          <div class="note" id="quoteTerms">Price valid for 14 days. 25% deposit required to confirm your fitting date.</div>
+        <div class="pageno">04</div></div>
+
+        <div class="page decision dark-page" id="decisionPage" data-density="hard">
+          <div class="decision-inner">
+            <h2 class="title">What would you like to do?</h2>
+            <p class="lead">Happy with the quote? Sign below and we'll get your fitting booked in. If it's not quite right, let us know why.</p>
+            <div class="decision-btns">
+              <button class="dbtn sign" id="signBtn" type="button">Sign to accept this quote</button>
+              <button class="dbtn decline" id="declineBtn" type="button">Decline this quote</button>
+            </div>
+          </div>
+          <div class="pageno">05</div>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="nav-btn" id="prevBtn" type="button">← Prev</button>
+      <div class="dots" id="dots"></div>
+      <button class="nav-btn" id="nextBtn" type="button">Next →</button>
+    </div>
+  </div>
+  <!-- numbered hotspots are placed in here by demo-layer.js -->
+  <div class="hs-layer" id="hsLayer" aria-label="Notes on this page"></div>
+</main>
+
+<script src="/work/dc-flooring-quote/page-flip.browser.js"></script>
+<script src="/site.js"></script>
+<script src="/work/dc-flooring-quote/flipbook.js"></script>
+<script src="/work/dc-flooring-quote/demo-layer.js"></script>
+</body>
+</html>
