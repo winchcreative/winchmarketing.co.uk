@@ -36,6 +36,31 @@ for (const q of faq.mainEntity) {
 }
 expect(!/\b0?7403\b|447403|205318/.test(body), 'index.html: phone number appears as text');
 
+// Marketing for window and door companies: copy, schema and the six jump-link sections.
+const WIN = 'marketing-for-window-companies/index.html';
+const win = await read(WIN);
+const winBody = text(win);
+for (const s of ['Marketing for window and door companies', "I help owner-run window and door companies turn more surveys into signed orders.", "That's the deal.", 'Winch Marketing']) {
+  expect(winBody.includes(s), `${WIN}: "${s}" is not in the served HTML`);
+}
+expect(win.includes('<title>Marketing for window and door companies | Winch Marketing</title>'), `${WIN}: title`);
+expect(win.includes('<link rel="canonical" href="https://winchmarketing.co.uk/marketing-for-window-companies/">'), `${WIN}: canonical`);
+const winDesc = (win.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
+expect(winDesc && winDesc.length < 160, `${WIN}: meta description missing or ${winDesc.length} characters`);
+for (const bad of ['cdn.tailwindcss.com', 'babel', 'text/babel', '<div id="root"></div>', 'aria-label="Welcome"']) expect(!win.includes(bad), `${WIN}: should not contain "${bad}"`);
+const winLd = [...win.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
+const svc = (winLd.find((b) => b['@graph']) || { '@graph': [] })['@graph'].find((n) => n['@type'] === 'Service');
+expect(svc && svc.serviceType === 'Marketing for window and door companies' && svc.provider && svc.areaServed.length === 8, `${WIN}: Service JSON-LD`);
+const winFaq = winLd.find((b) => b['@type'] === 'FAQPage') || { mainEntity: [] };
+expect(winFaq.mainEntity.length === 6, `${WIN}: expected 6 questions, found ${winFaq.mainEntity.length}`);
+for (const q of winFaq.mainEntity) {
+  const id = q['@id'].split('#')[1];
+  expect(new RegExp(`<h2[^>]*id="${id}"`).test(win) && win.includes(`href="#${id}"`), `${WIN}: H2 #${id} or its jump link is missing`);
+  expect(winBody.includes(q.name) && winBody.includes(text(q.acceptedAnswer.text).trim()), `${WIN}: "${q.name}" answer is not visible on the page`);
+}
+expect(!/[\u2013\u2014!]| - /.test(winBody), `${WIN}: dash used as punctuation or an exclamation mark in the copy`);
+expect(index.includes('href="/marketing-for-window-companies/"'), 'index.html: no link to the window companies page');
+
 const fifteen = await read('fifteen.html');
 for (const s of ['15 minutes.', 'Less than you think.', 'Macarenas', "That's all I'm asking."]) {
   expect(text(fifteen).includes(s), `fifteen.html: "${s}" is not in the served HTML`);
@@ -55,12 +80,12 @@ expect(robots.includes('Sitemap: https://winchmarketing.co.uk/sitemap.xml'), 'ro
 
 const sitemap = await read('sitemap.xml');
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-expect(JSON.stringify(locs) === JSON.stringify(['https://winchmarketing.co.uk/', 'https://winchmarketing.co.uk/fifteen.html']), 'sitemap.xml: ' + locs.join(', '));
+expect(JSON.stringify(locs) === JSON.stringify(['https://winchmarketing.co.uk/', 'https://winchmarketing.co.uk/fifteen.html', 'https://winchmarketing.co.uk/marketing-for-window-companies/']), 'sitemap.xml: ' + locs.join(', '));
 expect((sitemap.match(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g) || []).length === locs.length, 'sitemap.xml: lastmod');
 expect((await read('llms.txt')).startsWith('# Winch Marketing'), 'llms.txt');
 
 const published = await readdir(DIST);
-for (const f of ['supabase', 'scripts', 'node_modules', 'README.md', 'claude.md', 'package.json']) {
+for (const f of ['supabase', 'scripts', 'node_modules', 'README.md', 'claude.md', 'package.json', 'shared.jsx']) {
   expect(!published.includes(f), `dist/ should not contain ${f}`);
 }
 
