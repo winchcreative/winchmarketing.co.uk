@@ -17,6 +17,11 @@ The Winch Marketing site, hosted on GitHub Pages and deployed by GitHub Actions 
     React still loads and takes over (banner from `?n=`, tracking, proof cards, WhatsApp).
   - `sitemap.xml` generated (lastmod from git), plus `robots.txt`, `llms.txt`, images and `admin.html` copied
 - `npm run check` fails if the built pages are missing content or have leaked anything they shouldn't.
+- `site.js`: the anonymous visit tracking (`track()`) and the WhatsApp number, as plain JavaScript. The React pages and
+  the quote demo load it with `<script src="/site.js">`, so there is one copy of the tracking keys.
+- `work/dc-flooring-quote/`: the DC Flooring quote demo, a standalone page published as it is (`STANDALONE` in
+  `scripts/build.mjs`). `noindex`, not in `sitemap.xml`, and fully disconnected: the build and the check both fail if
+  anything in that folder mentions Supabase. Its own tracking goes through `/site.js` only.
 - `admin.html` is private: `noindex` and blocked in `robots.txt`.
 - `supabase/`: SQL to run by hand in the Supabase SQL Editor. Not published.
 

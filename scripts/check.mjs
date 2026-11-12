@@ -61,6 +61,24 @@ for (const q of winFaq.mainEntity) {
 expect(!/[\u2013\u2014!]| - /.test(winBody), `${WIN}: dash used as punctuation or an exclamation mark in the copy`);
 expect(index.includes('href="/marketing-for-window-companies/"'), 'index.html: no link to the window companies page');
 
+// The DC Flooring quote demo: noindex, not in the sitemap, linked from the homepage and the window page,
+// uses the site's tracking (/site.js), and nothing in its folder mentions Supabase.
+const DEMO = 'work/dc-flooring-quote/';
+const demo = await read(DEMO + 'index.html');
+expect(/<meta name="robots" content="noindex/.test(demo), `${DEMO}: missing noindex`);
+expect(demo.includes('Example quote I built for DC Flooring. The customer and prices are made up.'), `${DEMO}: banner text`);
+expect(demo.includes('Mr &amp; Mrs Taylor') && demo.includes('£3,108.00'), `${DEMO}: the made-up quote is not in the HTML`);
+expect(demo.includes('<script src="/site.js"></script>'), `${DEMO}: does not load /site.js for tracking`);
+for (const f of await readdir(path.join(DIST, DEMO), { recursive: true })) {
+  const full = path.join(DIST, DEMO, f);
+  const isText = /\.(html|js|css|txt|json|svg)$/.test(f);
+  expect(!/supabase/i.test(f) && !(isText && /supabase/i.test(await readFile(full, 'utf8'))), `${DEMO}${f}: mentions Supabase`);
+}
+for (const [file, html] of [['index.html', index], [WIN, win]]) {
+  expect(/<a href="\/work\/dc-flooring-quote\/"[^>]*>See a real quote tool I built/.test(html), `${file}: no "See a real quote tool I built" link to the demo`);
+}
+expect((await read('site.js')).includes('function track('), 'site.js: tracking is missing');
+
 const fifteen = await read('fifteen.html');
 for (const s of ['15 minutes.', 'Less than you think.', 'Macarenas', "That's all I'm asking."]) {
   expect(text(fifteen).includes(s), `fifteen.html: "${s}" is not in the served HTML`);
@@ -81,6 +99,7 @@ expect(robots.includes('Sitemap: https://winchmarketing.co.uk/sitemap.xml'), 'ro
 const sitemap = await read('sitemap.xml');
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 expect(JSON.stringify(locs) === JSON.stringify(['https://winchmarketing.co.uk/', 'https://winchmarketing.co.uk/fifteen.html', 'https://winchmarketing.co.uk/marketing-for-window-companies/']), 'sitemap.xml: ' + locs.join(', '));
+expect(!sitemap.includes('dc-flooring'), 'sitemap.xml: the quote demo must not be listed');
 expect((sitemap.match(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g) || []).length === locs.length, 'sitemap.xml: lastmod');
 expect((await read('llms.txt')).startsWith('# Winch Marketing'), 'llms.txt');
 

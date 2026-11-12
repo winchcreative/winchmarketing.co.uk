@@ -1,0 +1,93 @@
+/* The Winch layer on the DC Flooring demo: banner, hotspots, note cards and the bottom sheet.
+   Winch colours and fonts (not DC's), so it is always clear what is the quote and what is the commentary. */
+:root{
+  --wm-ink:#0A0A0A; --wm-hi:#F5C230; --wm-paper:#F4F4F2; --wm-mute:#A1A1AA; --wm-line:rgba(255,255,255,.14);
+  --wm-body:'Atkinson Hyperlegible',system-ui,sans-serif; --wm-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+}
+body{ background:var(--bark); }
+
+/* ---------- banner ---------- */
+.wm-bar{ background:var(--wm-ink); color:#fff; border-bottom:2px solid var(--wm-hi); font-family:var(--wm-body); }
+.wm-bar-in{ max-width:1280px; margin:0 auto; padding:8px max(16px, env(safe-area-inset-left, 0px)); display:flex; align-items:center; justify-content:space-between; gap:8px 20px; flex-wrap:wrap; }
+.wm-bar-text{ margin:0; font-size:15px; line-height:1.35; min-width:0; }
+.wm-bar-actions{ display:flex; align-items:center; gap:6px 14px; flex-wrap:wrap; }
+.wm-home{ display:inline-flex; align-items:center; min-height:44px; color:var(--wm-hi); font-family:var(--wm-mono); font-size:12px; font-weight:500; letter-spacing:.06em; text-decoration:underline; text-underline-offset:4px; text-decoration-color:rgba(245,194,48,.45); }
+.wm-home:hover{ text-decoration-color:var(--wm-hi); }
+.wm-btn{ min-height:40px; padding:0 14px; border:2px solid var(--wm-hi); border-radius:4px; background:var(--wm-hi); color:#000; font-family:var(--wm-mono); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; }
+.wm-btn:hover{ background:#fff; border-color:#fff; }
+.wm-btn.wm-ghost{ background:none; color:#fff; border-color:rgba(255,255,255,.35); }
+.wm-btn.wm-ghost:hover{ border-color:#fff; }
+.wm-bar a:focus-visible, .wm-bar button:focus-visible, .hs:focus-visible, .nc a:focus-visible, .nc button:focus-visible{ outline:3px solid var(--wm-hi); outline-offset:3px; }
+.nc .nc-primary:focus-visible{ outline-color:#fff; }
+@media (max-width:640px){
+  .wm-bar-in{ padding-top:8px; padding-bottom:6px; }
+  .wm-bar-text{ font-size:14px; flex-basis:100%; }
+  .wm-bar-actions{ width:100%; gap:8px; }
+  .wm-bar-actions{ flex-wrap:nowrap; }
+  .wm-home{ margin-right:auto; min-height:40px; font-size:11px; letter-spacing:0; white-space:nowrap; }
+  .wm-btn{ flex:none; min-height:38px; padding:0 9px; font-size:11px; letter-spacing:.02em; white-space:nowrap; }
+}
+
+/* the book sits a little lower under the banner */
+#customer{ min-height:calc(100vh - 62px); padding-top:40px; }
+
+/* ---------- demo note on the last page, after the normal confirmation ---------- */
+.demo-note{ margin:14px auto 0; max-width:34ch; padding:8px 12px; border:1px dashed rgba(245,194,48,.6); border-radius:4px; color:var(--linen); font-size:15px; line-height:1.4; }
+.dbtn.demo-reset{ margin-top:10px; min-height:44px; padding:8px 16px; background:none; border:1px solid #5a5a5a; color:var(--linen); font-size:14px; }
+.dbtn.demo-reset:hover{ border-color:var(--linen); }
+
+/* ---------- hotspots ---------- */
+.hs-layer{ position:absolute; inset:0; pointer-events:none; z-index:50; }
+.hs{ position:absolute; width:28px; height:28px; margin:-14px 0 0 -14px; padding:0; border:2px solid var(--wm-ink); border-radius:50%;
+  background:var(--wm-hi); color:#000; font:700 13px/1 var(--wm-mono); cursor:pointer; pointer-events:auto;
+  box-shadow:0 0 0 2px rgba(255,255,255,.85), 0 4px 10px rgba(0,0,0,.45); touch-action:manipulation; }
+.hs::before{ content:""; position:absolute; inset:-10px; border-radius:50%; }   /* a 48px target for a finger */
+.hs[hidden]{ display:none; }
+.hs:hover{ background:#fff; }
+.hs.is-active{ background:#fff; transform:scale(1.15); }
+@media (prefers-reduced-motion:no-preference){
+  .hs{ transition:transform .15s ease, background-color .15s ease; }
+  .hs::after{ content:""; position:absolute; inset:-2px; border-radius:50%; border:2px solid var(--wm-hi); animation:hsPulse 2.4s ease-out infinite; pointer-events:none; }
+  .hs.is-active::after{ border-color:#fff; }
+}
+@keyframes hsPulse{ 0%{ transform:scale(1); opacity:.9; } 70%,100%{ transform:scale(1.9); opacity:0; } }
+
+/* ---------- note card ---------- */
+.nc{ z-index:8000; background:var(--wm-ink); color:#fff; font-family:var(--wm-body); font-size:17px; line-height:1.5;
+  border:1px solid var(--wm-line); box-shadow:0 24px 48px -16px rgba(0,0,0,.7); }
+.nc.nc-side{ position:absolute; border-radius:6px; padding:18px 20px 16px; border-left:3px solid var(--wm-hi); }
+.nc.nc-side::before{ content:""; position:absolute; left:-11px; top:calc(var(--arrow-y, 30px) - 8px); border:8px solid transparent; border-right-color:var(--wm-hi); border-left:0; }
+.nc.nc-side.no-arrow::before{ display:none; }
+.nc.nc-sheet{ position:fixed; left:0; right:0; bottom:0; max-width:620px; margin:0 auto; max-height:min(56vh, 420px); overflow-y:auto;
+  border-radius:14px 14px 0 0; border-bottom:0; border-top:3px solid var(--wm-hi);
+  padding:14px max(18px, env(safe-area-inset-left, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)); }
+.nc-head{ display:flex; align-items:center; gap:10px; margin:0 -6px 2px 0; }
+.nc-num{ flex:none; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:var(--wm-hi); color:#000; font:700 12px/1 var(--wm-mono); }
+.nc-count{ flex:1; font:500 12px/1.2 var(--wm-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--wm-mute); }
+.nc-x{ flex:none; width:44px; height:44px; margin:-8px -8px -8px 0; border:0; background:none; color:#fff; font-size:28px; line-height:1; cursor:pointer; border-radius:4px; }
+.nc-x:hover{ color:var(--wm-hi); }
+.nc-title{ margin:4px 0 6px; font-family:var(--wm-body); font-size:22px; font-weight:700; line-height:1.2; color:#fff; }
+.nc-title:focus{ outline:none; }
+.nc-text{ margin:0; color:rgba(255,255,255,.88); }
+.nc-extra{ margin:10px 0 0; font-size:15px; color:var(--wm-hi); }
+.nc-nav{ display:flex; align-items:center; gap:8px; margin-top:16px; }
+.nc-spacer{ flex:1; }
+.nc-btn{ display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 16px; border-radius:4px; border:2px solid var(--wm-hi);
+  font:700 12px/1.2 var(--wm-mono); letter-spacing:.08em; text-transform:uppercase; text-decoration:none; text-align:center; cursor:pointer; }
+.nc-primary{ background:var(--wm-hi); color:#000; }
+.nc-primary:hover{ background:#fff; border-color:#fff; }
+.nc-outline{ background:none; color:#fff; border-color:rgba(255,255,255,.4); }
+.nc-outline:hover:not(:disabled){ border-color:#fff; }
+.nc-btn:disabled{ opacity:.35; cursor:default; }
+.nc-link{ min-height:44px; padding:0 4px; border:0; background:none; color:var(--wm-mute); font:500 12px/1.2 var(--wm-mono); letter-spacing:.08em; text-transform:uppercase; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.nc-link:hover{ color:#fff; }
+.nc.is-final .nc-nav{ justify-content:space-between; }
+.nc-ctas{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+.nc-ctas .nc-btn{ width:100%; min-height:52px; font-size:13px; }
+@media (prefers-reduced-motion:no-preference){
+  .nc.is-in.nc-side{ animation:ncIn .22s ease-out; }
+  .nc.is-in.nc-sheet{ animation:ncUp .25s ease-out; }
+}
+@keyframes ncIn{ from{ opacity:0; transform:translateX(8px); } to{ opacity:1; transform:none; } }
+@keyframes ncUp{ from{ transform:translateY(24px); opacity:.4; } to{ transform:none; opacity:1; } }
+@media (max-width:379px){ .wm-bar-actions{ flex-wrap:wrap; } }

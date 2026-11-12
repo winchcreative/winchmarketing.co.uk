@@ -8,8 +8,10 @@
 //      markup is written into its empty <div id="root">, so crawlers that do not run JavaScript
 //      (GPTBot, ClaudeBot, PerplexityBot) get the real content. React still loads and takes over.
 //   4. sitemap.xml is generated, and the public files are copied across. Nothing else is published.
+//   5. Standalone demo folders (STANDALONE) are copied as they are: noindex, not in the sitemap, and
+//      the build fails if one mentions Supabase anywhere.
 
-import { readFile, writeFile, mkdir, rm, copyFile, readdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm, copyFile, readdir, cp } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -33,7 +35,11 @@ const PAGES = [
 // JSX shared by the React pages; loaded with <script type="text/babel" src="/shared.jsx">.
 const SHARED = ['shared.jsx'];
 // Published as-is. admin.html is private (noindex, blocked in robots.txt) and keeps its CDN setup.
-const STATIC = ['admin.html', 'CNAME', 'robots.txt', 'llms.txt'];
+// site.js is the plain-JS visit tracking the React pages and the quote demo load with <script src="/site.js">.
+const STATIC = ['admin.html', 'CNAME', 'robots.txt', 'llms.txt', 'site.js'];
+// Self-contained pages published folder by folder, exactly as they are in the repo. Their HTML is written out in full
+// (nothing for the pre-render step to fill in), they are noindex and they are never listed in sitemap.xml.
+const STANDALONE = ['work/dc-flooring-quote'];
 const ASSET_EXT = /\.(jpe?g|png|webp|svg|ico|gif)$/i;
 
 const TAILWIND_CDN = /<script src="https:\/\/cdn\.tailwindcss\.com\/[^"]*"><\/script>\s*/;
@@ -110,6 +116,16 @@ async function main() {
   // 4a. Static files and images.
   for (const f of STATIC) await copyFile(path.join(ROOT, f), path.join(DIST, f));
   for (const f of await readdir(ROOT)) if (ASSET_EXT.test(f)) await copyFile(path.join(ROOT, f), path.join(DIST, f));
+  for (const dir of STANDALONE) {
+    await cp(path.join(ROOT, dir), path.join(DIST, dir), { recursive: true });
+    const html = await readFile(path.join(DIST, dir, 'index.html'), 'utf8');
+    if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`${dir}: missing noindex`);
+    for (const f of await readdir(path.join(DIST, dir), { recursive: true })) {
+      if (/supabase/i.test(f) || (/\.(html|js|css|txt)$/.test(f) && /supabase/i.test(await readFile(path.join(DIST, dir, f), 'utf8')))) {
+        throw new Error(`${dir}/${f}: mentions Supabase. The demo must not connect to anything.`);
+      }
+    }
+  }
 
   // 3. Pre-render React pages into their empty root.
   const reactPages = PAGES.filter((p) => built[p.file].includes('<div id="root"></div>'));
