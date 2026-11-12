@@ -4,7 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>How long is 15 minutes, really? | Winch Marketing</title>
-<meta name="description" content="15 minutes. Less than you think. Drag the slider and see what fits.">
+<meta name="description" content="How long is 15 minutes, really? Drag the slider to see how many Macarenas, cups of tea and EastEnders episodes fit. From Winch Marketing, Northallerton.">
+<link rel="canonical" href="https://winchmarketing.co.uk/fifteen.html">
+<link rel="home" href="https://winchmarketing.co.uk/">
+<meta name="theme-color" content="#0A0A0A">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Winch Marketing">
+<meta property="og:locale" content="en_GB">
+<meta property="og:url" content="https://winchmarketing.co.uk/fifteen.html">
+<meta property="og:title" content="How long is 15 minutes, really? | Winch Marketing">
+<meta property="og:description" content="How long is 15 minutes, really? Drag the slider to see how many Macarenas, cups of tea and EastEnders episodes fit. From Winch Marketing, Northallerton.">
+<meta property="og:image" content="https://winchmarketing.co.uk/hero.jpg">
+<meta property="og:image:alt" content="A yellow front door in a grey brick wall">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
@@ -78,7 +91,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 
 <header class="border-b border-white/10 bg-ink">
   <div class="gutter mx-auto max-w-[1280px] py-4">
-    <a id="back" href="index.html" class="font-mono text-[12px] uppercase tracking-[0.14em] text-mute hover:text-hi">&larr; Back to Winch</a>
+    <a id="back" href="/" class="font-mono text-[12px] uppercase tracking-[0.14em] text-mute hover:text-hi">&larr; Back to Winch</a>
   </div>
 </header>
 
@@ -167,7 +180,7 @@ a:focus-visible,button:focus-visible{outline:3px solid #F5C230;outline-offset:3p
 
 <footer class="bg-ink">
   <div class="gutter mx-auto flex max-w-[1280px] flex-col gap-2 py-8 md:flex-row md:items-center md:justify-between">
-    <a id="back2" href="index.html" class="font-mono text-[12px] uppercase tracking-[0.14em] text-mute hover:text-hi">&larr; Back to Winch</a>
+    <a id="back2" href="/" class="font-mono text-[12px] uppercase tracking-[0.14em] text-mute hover:text-hi">&larr; Back to Winch</a>
     <p class="font-mono text-[11px] text-mute">© Winch Marketing. Anonymous visit tracking, no cookies.</p>
   </div>
 </footer>
@@ -189,16 +202,31 @@ const SESSION = (() => {
   } catch (e) { return Math.random().toString(36).slice(2, 10); }
 })();
 const sent = {};
+// Where the visit came from, domain only (google.com, chatgpt.com, ...). Sent with the view event; own-site navigation counts as none.
+const REFERRER = (() => {
+  try {
+    if (!document.referrer) return null;
+    const host = new URL(document.referrer).hostname.toLowerCase().replace(/^www\./, '');
+    if (!host || host === location.hostname.toLowerCase().replace(/^www\./, '')) return null;
+    return host.slice(0, 100);
+  } catch (e) { return null; }
+})();
 function track(type, detail) {
   const key = type + (detail || '');
   if (sent[key] || SB_URL.indexOf('__') === 0) return;
   sent[key] = true;
+  const row = { ref: REF, session: SESSION, type: type, detail: detail || null, path: location.pathname, device: window.innerWidth < 768 ? 'mobile' : 'desktop' };
+  if (type === 'view' && REFERRER) row.referrer = REFERRER;
+  const send = (body) => fetch(SB_URL + '/rest/v1/visits', {
+    method: 'POST',
+    keepalive: true,
+    headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Prefer: 'return=minimal' },
+    body: JSON.stringify(body)
+  });
   try {
-    fetch(SB_URL + '/rest/v1/visits', {
-      method: 'POST',
-      keepalive: true,
-      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Prefer: 'return=minimal' },
-      body: JSON.stringify({ ref: REF, session: SESSION, type: type, detail: detail || null, path: location.pathname, device: window.innerWidth < 768 ? 'mobile' : 'desktop' })
+    send(row).then((res) => {
+      // Until the referrer column exists (supabase/migrations), the insert is rejected: send the view again without it.
+      if (!res.ok && row.referrer) { const { referrer, ...rest } = row; send(rest).catch(() => {}); }
     }).catch(() => {});
   } catch (e) {}
 }
@@ -225,7 +253,7 @@ function track(type, detail) {
 
 (function () {
   if (REF === 'direct') return;
-  document.querySelectorAll('#back, #back2').forEach((a) => { a.href = 'index.html?r=' + encodeURIComponent(REF); });
+  document.querySelectorAll('#back, #back2').forEach((a) => { a.href = '/?r=' + encodeURIComponent(REF); });
 })();
 
 /* ---------- the slider ---------- */
